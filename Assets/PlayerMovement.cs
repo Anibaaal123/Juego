@@ -26,10 +26,28 @@ public class PlayerMovement : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Animator animator;
     private PlayerHealth playerHealth;
+    private PlayerAttack playerAttack;
     private float horizontalInput;
     private bool isGrounded;
     private bool canDash = true;
     private bool isDashing = false;
+
+    // Ralentización temporal (por ejemplo, baldosas eléctricas)
+    private float speedMultiplier = 1f;
+    private float slowEndTime = 0f;
+
+    // Retroceso: mientras dure, el jugador no controla la velocidad horizontal
+    private float knockbackEndTime = 0f;
+
+    /// <summary>True si los pies tocan el suelo o una plataforma.</summary>
+    public bool IsGrounded => isGrounded;
+
+    /// <summary>Tiempo de espera entre dashes. Lo ajusta PlayerRunStats al aplicar mejoras.</summary>
+    public float DashCooldown
+    {
+        get => dashCooldown;
+        set => dashCooldown = Mathf.Max(0.05f, value);
+    }
 
     private void Awake()
     {
@@ -37,6 +55,7 @@ public class PlayerMovement : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         playerHealth = GetComponent<PlayerHealth>();
+        playerAttack = GetComponent<PlayerAttack>();
 
         if (audioSource == null)
         {
@@ -82,7 +101,29 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isDashing) return;
 
-        rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
+        if (speedMultiplier < 1f && Time.time >= slowEndTime) speedMultiplier = 1f;
+        if (Time.time < knockbackEndTime) return;
+
+        float attackMultiplier = playerAttack != null ? playerAttack.MoveSpeedMultiplier : 1f;
+        rb.linearVelocity = new Vector2(horizontalInput * moveSpeed * speedMultiplier * attackMultiplier, rb.linearVelocity.y);
+    }
+
+    /// <summary>Lanza al jugador con 'velocity' y le quita el control horizontal durante 'duration' segundos.</summary>
+    public void ApplyKnockback(Vector2 velocity, float duration)
+    {
+        rb.linearVelocity = velocity;
+        knockbackEndTime = Time.time + duration;
+    }
+
+    /// <summary>
+    /// Reduce la velocidad de desplazamiento a moveSpeed * multiplier durante 'duration' segundos.
+    /// Si ya hay una ralentización activa, se conserva la más fuerte y se renueva la duración.
+    /// </summary>
+    public void ApplySlow(float multiplier, float duration)
+    {
+        multiplier = Mathf.Clamp01(multiplier);
+        if (Time.time >= slowEndTime || multiplier < speedMultiplier) speedMultiplier = multiplier;
+        slowEndTime = Mathf.Max(slowEndTime, Time.time + duration);
     }
 
     private void Jump()

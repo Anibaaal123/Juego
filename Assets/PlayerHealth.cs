@@ -29,6 +29,18 @@ public class PlayerHealth : MonoBehaviour
 
     [HideInInspector] public bool isInvulnerable = false;
 
+    public int MaxHealth => maxHealth;
+    public int CurrentHealth => currentHealth;
+    public bool IsDead => isDead;
+
+    /// <summary>Fija la vida máxima y la actual (mejoras y vida que se arrastra entre arenas).</summary>
+    public void SetHealth(int newMax, int newCurrent)
+    {
+        maxHealth = Mathf.Max(1, newMax);
+        currentHealth = Mathf.Clamp(newCurrent, 0, maxHealth);
+        UpdateHealthUI();
+    }
+
     private void Awake()
     {
         currentHealth = maxHealth;
@@ -57,6 +69,7 @@ public class PlayerHealth : MonoBehaviour
 
         currentHealth = Mathf.Max(0, currentHealth - damage);
         UpdateHealthUI();
+        GameFeel.Shake(0.2f, 0.15f);
 
         if (audioSource != null && hurtSound != null && currentHealth > 0)
         {
@@ -117,9 +130,13 @@ public class PlayerHealth : MonoBehaviour
         RestartScene();
     }
 
+    /// <summary>
+    /// Boss rush con 1 sola vida: al morir (o con R) se reinicia la partida completa desde la Arena 1
+    /// y se pierden las mejoras obtenidas.
+    /// </summary>
     public void RestartScene()
     {
-        Scene currentScene = SceneManager.GetActiveScene();
-        SceneManager.LoadScene(currentScene.buildIndex);
+        RunState.Reset();
+        SceneManager.LoadScene(0);
     }
 }
