@@ -58,14 +58,24 @@ public static class ArenaBuilder
         BuildArena1();
         BuildArena2();
 
+        // El menú se crea solo si no existe (se regenera con Colossus → Construir Menú Principal)
+        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(MenuBuilder.MainMenuScenePath) == null) MenuBuilder.BuildMainMenu();
+
+        UpdateBuildSettings();
+        AssetDatabase.SaveAssets();
+        EditorSceneManager.OpenScene(MenuBuilder.MainMenuScenePath);
+        Debug.Log("[ArenaBuilder] Boss Rush construido: MainMenu -> Arena1_Demonio -> Arena2_Centinela");
+    }
+
+    /// <summary>Orden de las escenas en el juego: menú (0), Arena 1 (1), Arena 2 (2).</summary>
+    public static void UpdateBuildSettings()
+    {
         EditorBuildSettings.scenes = new[]
         {
+            new EditorBuildSettingsScene(MenuBuilder.MainMenuScenePath, true),
             new EditorBuildSettingsScene(Arena1ScenePath, true),
             new EditorBuildSettingsScene(Arena2ScenePath, true),
         };
-        AssetDatabase.SaveAssets();
-        EditorSceneManager.OpenScene(Arena1ScenePath);
-        Debug.Log("[ArenaBuilder] Boss Rush construido: Arena1_Demonio -> Arena2_Centinela");
     }
 
     // ---------------- Arena 1 ----------------

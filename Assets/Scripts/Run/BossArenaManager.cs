@@ -7,7 +7,8 @@ using UnityEngine.UI;
 /// Controla una arena del Boss Rush:
 ///   Jefe derrotado → (1.0 s) aparecen 2 pedestales con mejoras distintas → el jugador pisa uno →
 ///   el otro se destruye → (1.5 s) se abre la puerta a la siguiente arena.
-/// Si es la última arena (sin escena siguiente), muestra la victoria y reinicia la partida.
+/// Si es la última arena (sin escena siguiente), muestra la victoria y vuelve al menú principal.
+/// Esc abandona la partida y vuelve al menú.
 /// </summary>
 public class BossArenaManager : MonoBehaviour
 {
@@ -30,8 +31,12 @@ public class BossArenaManager : MonoBehaviour
     [Header("Salida")]
     [SerializeField] private ExitDoor exitDoor;
     [SerializeField] private float doorOpenDelay = 1.5f;
-    [Tooltip("Si es la última arena: segundos antes de volver a la Arena 1")]
+    [Tooltip("Si es la última arena: segundos antes de volver al menú principal")]
     [SerializeField] private float finalVictoryDelay = 5f;
+
+    [Header("Menú")]
+    [Tooltip("Tecla para abandonar la partida y volver al menú principal")]
+    [SerializeField] private KeyCode backToMenuKey = KeyCode.Escape;
 
     [Header("Mensajes en pantalla")]
     [SerializeField] private Text messageText;
@@ -43,6 +48,15 @@ public class BossArenaManager : MonoBehaviour
     {
         ShowMessage("");
         if (boss != null) boss.Died += _ => StartCoroutine(VictorySequence());
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(backToMenuKey))
+        {
+            RunState.Reset();
+            SceneManager.LoadScene(GameScenes.MainMenu);
+        }
     }
 
     private IEnumerator VictorySequence()
@@ -65,7 +79,7 @@ public class BossArenaManager : MonoBehaviour
             ShowMessage("¡VICTORIA!\nDerrotaste a todos los jefes");
             yield return new WaitForSeconds(finalVictoryDelay);
             RunState.Reset();
-            SceneManager.LoadScene(0);
+            SceneManager.LoadScene(GameScenes.MainMenu);
             yield break;
         }
 

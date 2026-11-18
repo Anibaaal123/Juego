@@ -137,6 +137,6 @@ public class PlayerHealth : MonoBehaviour
     public void RestartScene()
     {
         RunState.Reset();
-        SceneManager.LoadScene(0);
+        SceneManager.LoadScene(GameScenes.FirstArena);
     }
 }
