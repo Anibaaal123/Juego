@@ -25,6 +25,21 @@ public class MainMenu : MonoBehaviour
     {
         // Esc cierra el panel de controles
         if (controlsPanel != null && controlsPanel.activeSelf && Input.GetKeyDown(KeyCode.Escape)) ShowMain();
+
+        // Si un clic en una zona vacía quitó la selección, el teclado vuelve a seleccionar un botón
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject == null && KeyboardNavigationPressed())
+        {
+            bool inControls = controlsPanel != null && controlsPanel.activeSelf;
+            Select(inControls ? controlsBackButton : firstButton);
+        }
+    }
+
+    private static bool KeyboardNavigationPressed()
+    {
+        return Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.DownArrow) ||
+               Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.S) ||
+               Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
+               Input.GetKeyDown(KeyCode.Tab);
     }
 
     public void Play()

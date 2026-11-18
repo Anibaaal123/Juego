@@ -142,9 +142,11 @@ public static class MenuBuilder
     {
         var img = CreateImage(parent, name, LoadSprite(ButtonSpritePath), Color.white);
         img.type = Image.Type.Sliced;
+        img.raycastTarget = true; // necesario para que el botón reciba clics del mouse
         Place(img.rectTransform, new Vector2(0.5f, 0.5f), position, new Vector2(460f, 96f));
 
         var button = img.gameObject.AddComponent<Button>();
+        button.targetGraphic = img;
         ColorBlock colors = button.colors;
         colors.normalColor = ButtonColor;
         colors.highlightedColor = new Color(0.55f, 0.25f, 0.7f, 1f);
