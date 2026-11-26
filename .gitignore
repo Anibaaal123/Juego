@@ -106,5 +106,7 @@ InitTestScene*.unity*
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
-!Ejecutable/
-!Ejecutable/**
+# Compilaciones del juego: se publican como Releases de GitHub, no se versionan
+/Ejecutable/
+/Colossus_Build*/
+*.zip

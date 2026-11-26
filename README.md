@@ -200,12 +200,16 @@ Empiezas la partida con 2 puntos (solo alcanzan para atributos). Después de cad
 
 **¿Tiene multijugador o compras dentro del juego?** No. Es una experiencia de un jugador, de pago único y sin microtransacciones.
 
-**¿Puedo probarlo ya?** Sí, el proyecto es público. Mira la siguiente sección.
+**¿Puedo probarlo ya?** Sí. Descarga la versión para Windows desde [Releases](https://github.com/Anibaaal123/Juego/releases/latest) o abre el proyecto en Unity. Mira la siguiente sección.
 
 ---
 
 ## Pruébalo
 
+### Opción A: jugar (sin instalar nada)
+Descarga el `.zip` de la [última release](https://github.com/Anibaaal123/Juego/releases/latest), descomprímelo y ejecuta `Colossus Boss Rush.exe`. Funciona en Windows de 64 bits.
+
+### Opción B: abrir el proyecto en Unity
 1. Instala **Unity 6000.6.0f1** (con Unity Hub), **Git** y **Git LFS**.
 2. Clona el repositorio. Es importante usar `git lfs install` antes, o las imágenes y los sonidos llegarán rotos:
    ```
