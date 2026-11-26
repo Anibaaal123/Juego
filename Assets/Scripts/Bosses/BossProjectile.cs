@@ -75,8 +75,8 @@ public class BossProjectile : MonoBehaviour
                 PlayerHealth player = hit.GetComponent<PlayerHealth>();
                 if (player != null)
                 {
-                    PlayerParry parry = player.GetComponent<PlayerParry>();
-                    if (parry != null && parry.TryReflect())
+                    PlayerGuard guard = player.GetComponent<PlayerGuard>();
+                    if (guard != null && guard.TryReflect())
                     {
                         Reflect();
                         return;

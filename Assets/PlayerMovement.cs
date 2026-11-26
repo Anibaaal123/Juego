@@ -5,7 +5,17 @@ public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 6f;
-    [SerializeField] private float jumpForce = 12f;
+
+    [Header("Salto y gravedad")]
+    [Tooltip("Altura máxima del salto (unidades) manteniendo Espacio apretado")]
+    [SerializeField] private float jumpHeight = 10.5f;
+    [Tooltip("Multiplica la gravedad base del Rigidbody2D: más alto = menos tiempo en el aire")]
+    [SerializeField] private float gravityMultiplier = 5f;
+    [Tooltip("Gravedad extra al caer: la bajada es más rápida que la subida")]
+    [SerializeField] private float fallGravityMultiplier = 1.6f;
+    [Tooltip("Gravedad extra si se suelta Espacio durante la subida: permite saltos cortos")]
+    [SerializeField] private float jumpCutMultiplier = 2.5f;
+    [SerializeField] private float maxFallSpeed = 28f;
 
     [Header("Ground Detection")]
     [SerializeField] private Transform groundCheck;
@@ -27,6 +37,9 @@ public class PlayerMovement : MonoBehaviour
     private Animator animator;
     private PlayerHealth playerHealth;
     private PlayerAttack playerAttack;
+    private PlayerGuard guard;
+    private float baseGravityScale = 1f;
+    private bool jumpHeld;
     private float horizontalInput;
     private bool isGrounded;
     private bool isDashing = false;
@@ -68,6 +81,7 @@ public class PlayerMovement : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        baseGravityScale = rb.gravityScale;
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         playerHealth = GetComponent<PlayerHealth>();
@@ -87,6 +101,7 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         UpdateDashRecharge();
+        jumpHeld = Input.GetButton("Jump");
 
         if (isDashing) return;
 
@@ -122,13 +137,40 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        ApplyGravity();
+
         if (isDashing) return;
 
         if (speedMultiplier < 1f && Time.time >= slowEndTime) speedMultiplier = 1f;
         if (Time.time < knockbackEndTime) return;
 
+        // La defensa se agrega por código al entrar a la arena: se busca perezosamente
+        if (guard == null) guard = GetComponent<PlayerGuard>();
+
         float attackMultiplier = playerAttack != null ? playerAttack.MoveSpeedMultiplier : 1f;
-        rb.linearVelocity = new Vector2(horizontalInput * moveSpeed * speedMultiplier * attackMultiplier, rb.linearVelocity.y);
+        float guardMultiplier = guard != null ? guard.MoveSpeedMultiplier : 1f;
+        rb.linearVelocity = new Vector2(horizontalInput * moveSpeed * speedMultiplier * attackMultiplier * guardMultiplier, rb.linearVelocity.y);
+    }
+
+    /// <summary>
+    /// Salto con peso: gravedad alta, caída más rápida que la subida y salto corto si se suelta Espacio.
+    /// La altura del salto no depende de la gravedad: se calcula la velocidad inicial para alcanzar 'jumpHeight'.
+    /// </summary>
+    private void ApplyGravity()
+    {
+        if (isDashing)
+        {
+            rb.gravityScale = 0f; // el dash es horizontal: sin caída
+            return;
+        }
+
+        float scale = baseGravityScale * gravityMultiplier;
+        float vy = rb.linearVelocity.y;
+        if (vy < -0.05f) scale *= fallGravityMultiplier;
+        else if (vy > 0.05f && !jumpHeld) scale *= jumpCutMultiplier;
+        rb.gravityScale = scale;
+
+        if (vy < -maxFallSpeed) rb.linearVelocity = new Vector2(rb.linearVelocity.x, -maxFallSpeed);
     }
 
     /// <summary>Lanza al jugador con 'velocity' y le quita el control horizontal durante 'duration' segundos.</summary>
@@ -151,7 +193,10 @@ public class PlayerMovement : MonoBehaviour
 
     private void Jump()
     {
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        // v = √(2·g·h): la velocidad que hace falta para llegar exactamente a jumpHeight con la gravedad de subida
+        float gravity = Mathf.Abs(Physics2D.gravity.y) * baseGravityScale * gravityMultiplier;
+        float velocity = Mathf.Sqrt(2f * gravity * jumpHeight);
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, velocity);
 
         if (audioSource != null && jumpSound != null)
         {

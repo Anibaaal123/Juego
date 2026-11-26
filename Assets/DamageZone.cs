@@ -11,7 +11,7 @@ public class DamageZone : MonoBehaviour
             PlayerHealth health = collision.GetComponent<PlayerHealth>();
             if (health != null)
             {
-                health.TakeDamage(damageAmount);
+                health.TakeDamage(damageAmount, true); // los peligros del escenario no se bloquean
             }
         }
     }

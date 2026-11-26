@@ -22,8 +22,8 @@ public class PlayerRunStats : MonoBehaviour
         movement = GetComponent<PlayerMovement>();
         health = GetComponent<PlayerHealth>();
 
-        // El parry vive en un componente propio; se agrega solo para no tener que tocar las escenas
-        if (GetComponent<PlayerParry>() == null) gameObject.AddComponent<PlayerParry>();
+        // La defensa (cubrirse y parry) vive en un componente propio; se agrega solo para no tener que tocar las escenas
+        if (GetComponent<PlayerGuard>() == null) gameObject.AddComponent<PlayerGuard>();
 
         // Valores base de la escena, antes de cualquier mejora
         if (attack != null)

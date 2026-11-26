@@ -19,6 +19,12 @@ public static class ArenaBuilder
     private const string AnimDir = BeastDir + "/Animations";
     private const string TileSpritePath = "Assets/Environment/Common/tile_plate.png";
     private const string FireballPrefabPath = "Assets/Prefabs/Fireball.prefab";
+    private const string PlatformSpritePath = "Assets/Environment/Terrain/platform.png";
+    private const string GroundTopSpritePath = "Assets/Environment/Terrain/ground_top.png";
+    private const string GroundFillSpritePath = "Assets/Environment/Terrain/ground_fill.png";
+
+    // Cuántas unidades por encima del borde del collider queda el borde superior del dibujo (el pasto sobresale)
+    private const float TerrainSurfaceOffset = 0.75f;
     private const string OldArena1Path = "Assets/Scenes/SampleScene.unity";
     public const string Arena1ScenePath = "Assets/Scenes/Arena1_Demonio.unity";
     public const string Arena2ScenePath = "Assets/Scenes/Arena2_Centinela.unity";
@@ -50,6 +56,9 @@ public static class ArenaBuilder
         ConfigureSprites(BeastDir + "/Burn", SpriteAlignment.BottomCenter);
         ConfigureSprites(BeastDir + "/Fireball", SpriteAlignment.Center);
         ConfigureSingleSprite(TileSpritePath, new Vector4(2, 2, 2, 2));
+        ConfigureSingleSprite(PlatformSpritePath, Vector4.zero, SpriteAlignment.TopCenter);
+        ConfigureSingleSprite(GroundTopSpritePath, Vector4.zero, SpriteAlignment.TopCenter);
+        ConfigureSingleSprite(GroundFillSpritePath, Vector4.zero, SpriteAlignment.TopCenter);
 
         BuildFireballPrefab(LoadSprites(BeastDir + "/Fireball"));
 
@@ -93,6 +102,8 @@ public static class ArenaBuilder
 
         SetupBossRushObjects(scene, bossHealth, nextScene: "Arena2_Centinela", offerUpgrades: true, showStartShop: true,
                              bossName: "El Demonio", fastTime: 60f, slowTime: 150f);
+
+        StyleTerrain(scene);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
@@ -322,7 +333,7 @@ public static class ArenaBuilder
         return sr != null ? sr.sortingOrder : 2;
     }
 
-    private static void ConfigureSingleSprite(string path, Vector4 border)
+    private static void ConfigureSingleSprite(string path, Vector4 border, SpriteAlignment alignment = SpriteAlignment.Center)
     {
         var ti = (TextureImporter)AssetImporter.GetAtPath(path);
         if (ti == null) { Debug.LogError("[ArenaBuilder] No existe " + path); return; }
@@ -337,8 +348,115 @@ public static class ArenaBuilder
         var settings = new TextureImporterSettings();
         ti.ReadTextureSettings(settings);
         settings.spriteMeshType = SpriteMeshType.FullRect;
+        settings.spriteAlignment = (int)alignment;
         ti.SetTextureSettings(settings);
         ti.SaveAndReimport();
+    }
+
+    // ---------------- Terreno (plataformas y suelo) ----------------
+
+    /// <summary>
+    /// Reemplaza los rectángulos blancos de las plataformas y del suelo por arte de cementerio: islas de roca con pasto
+    /// y calaveras, y un suelo de pasto sobre adoquines morados. Los colliders no cambian (solo se normaliza la escala
+    /// del objeto para que el dibujo no se deforme). Se puede ejecutar varias veces sin duplicar nada.
+    /// </summary>
+    private static void StyleTerrain(UnityEngine.SceneManagement.Scene scene)
+    {
+        Sprite platform = AssetDatabase.LoadAssetAtPath<Sprite>(PlatformSpritePath);
+        Sprite groundTop = AssetDatabase.LoadAssetAtPath<Sprite>(GroundTopSpritePath);
+        Sprite groundFill = AssetDatabase.LoadAssetAtPath<Sprite>(GroundFillSpritePath);
+        if (platform == null || groundTop == null || groundFill == null)
+        {
+            Debug.LogWarning("[ArenaBuilder] Faltan los sprites del terreno en Assets/Environment/Terrain");
+            return;
+        }
+
+        // El terreno queda detrás de las baldosas de fuego, del jugador y de los jefes
+        int order = PlayerSortingOrder() - 3;
+
+        foreach (GameObject go in Resources.FindObjectsOfTypeAll<GameObject>())
+        {
+            if (go.scene != scene) continue;
+
+            if (go.name.StartsWith("Platform_1"))
+            {
+                BoxCollider2D col = NormalizeScale(go);
+                if (col == null) continue;
+
+                RemoveOldRenderer(go);
+                SpriteRenderer visual = EnsureVisual(go.transform, "Visual", col, order);
+                visual.sprite = platform;
+                visual.drawMode = SpriteDrawMode.Simple;
+            }
+            else if (go.name == "Suelo")
+            {
+                BoxCollider2D col = NormalizeScale(go);
+                if (col == null) continue;
+
+                RemoveOldRenderer(go);
+
+                // Franja de pasto y calaveras (una sola fila de 2.5 u que se repite a lo ancho)
+                SpriteRenderer top = EnsureVisual(go.transform, "Visual", col, order);
+                top.sprite = groundTop;
+                top.drawMode = SpriteDrawMode.Tiled;
+                top.tileMode = SpriteTileMode.Continuous;
+                top.size = new Vector2(col.size.x, groundTop.bounds.size.y);
+
+                // Adoquines bajo la franja, hasta salirse de la cámara
+                SpriteRenderer fill = EnsureVisual(go.transform, "Relleno", col, order - 1);
+                fill.transform.localPosition = new Vector3(col.offset.x,
+                    top.transform.localPosition.y - groundTop.bounds.size.y + 0.02f, 0f);
+                fill.sprite = groundFill;
+                fill.drawMode = SpriteDrawMode.Tiled;
+                fill.tileMode = SpriteTileMode.Continuous;
+                fill.size = new Vector2(col.size.x, 14f);
+            }
+        }
+    }
+
+    /// <summary>Pasa la escala del objeto al tamaño del collider, para poder dibujar sprites sin deformarlos.</summary>
+    private static BoxCollider2D NormalizeScale(GameObject go)
+    {
+        BoxCollider2D col = go.GetComponent<BoxCollider2D>();
+        if (col == null) return null;
+
+        Vector3 s = go.transform.localScale;
+        if (s != Vector3.one)
+        {
+            col.size = new Vector2(col.size.x * Mathf.Abs(s.x), col.size.y * Mathf.Abs(s.y));
+            col.offset = new Vector2(col.offset.x * s.x, col.offset.y * s.y);
+            go.transform.localScale = Vector3.one;
+        }
+        return col;
+    }
+
+    private static void RemoveOldRenderer(GameObject go)
+    {
+        SpriteRenderer old = go.GetComponent<SpriteRenderer>();
+        if (old != null) Object.DestroyImmediate(old);
+    }
+
+    /// <summary>Hijo con un SpriteRenderer cuyo borde superior queda sobre el borde de arriba del collider.</summary>
+    private static SpriteRenderer EnsureVisual(Transform parent, string name, BoxCollider2D col, int sortingOrder)
+    {
+        Transform child = parent.Find(name);
+        if (child == null)
+        {
+            var go = new GameObject(name);
+            go.layer = parent.gameObject.layer;
+            child = go.transform;
+            child.SetParent(parent, false);
+        }
+
+        float colliderTop = col.offset.y + col.size.y * 0.5f;
+        child.localPosition = new Vector3(col.offset.x, colliderTop + TerrainSurfaceOffset, 0f);
+        child.localRotation = Quaternion.identity;
+        child.localScale = Vector3.one;
+
+        SpriteRenderer sr = child.GetComponent<SpriteRenderer>();
+        if (sr == null) sr = child.gameObject.AddComponent<SpriteRenderer>();
+        sr.sortingOrder = sortingOrder;
+        return sr;
     }
 
     // ---------------- Sprites ----------------

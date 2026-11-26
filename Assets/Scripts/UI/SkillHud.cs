@@ -10,14 +10,14 @@ public class SkillHud : MonoBehaviour
 {
     private Text text;
     private PlayerMovement movement;
-    private PlayerParry parry;
+    private PlayerGuard parry;
 
     public static SkillHud Create(GameObject player)
     {
         var go = new GameObject("SkillHud");
         var hud = go.AddComponent<SkillHud>();
         hud.movement = player.GetComponent<PlayerMovement>();
-        hud.parry = player.GetComponent<PlayerParry>();
+        hud.parry = player.GetComponent<PlayerGuard>();
 
         Canvas canvas = UiKit.CreateCanvas("SkillHudCanvas", 50, go.transform);
         hud.text = UiKit.MakeText(canvas.transform, "Texto", "", 30, Color.white, Vector2.zero,

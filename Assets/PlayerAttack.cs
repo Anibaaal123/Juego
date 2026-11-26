@@ -72,6 +72,7 @@ public class PlayerAttack : MonoBehaviour
     private float lastAttackEndTime = -999f;
     private PlayerMovement movement;
     private PlayerHealth health;
+    private PlayerGuard guard;
 
     /// <summary>Daño por golpe. Lo ajusta PlayerRunStats según el atributo Daño.</summary>
     public int AttackDamage
@@ -86,6 +87,9 @@ public class PlayerAttack : MonoBehaviour
         get => chargeTime;
         set => chargeTime = Mathf.Max(0.2f, value);
     }
+
+    /// <summary>True durante un golpe (desde que sale hasta que termina su recuperación).</summary>
+    public bool IsAttacking => isAttacking;
 
     /// <summary>Multiplicador de velocidad que PlayerMovement aplica mientras se carga el ataque.</summary>
     public float MoveSpeedMultiplier => isCharging ? chargeMoveMultiplier : 1f;
@@ -110,8 +114,13 @@ public class PlayerAttack : MonoBehaviour
     {
         UpdateAttackPointPosition();
 
+        // La defensa se agrega por código al entrar a la arena: se busca perezosamente
+        if (guard == null) guard = GetComponent<PlayerGuard>();
+        bool guarding = guard != null && guard.IsGuarding;
+        if (guarding && isCharging) CancelCharge();
+
         bool grounded = movement == null || movement.IsGrounded;
-        bool canAttack = !isAttacking && Time.time >= nextAllowedAttackTime;
+        bool canAttack = !isAttacking && !guarding && Time.time >= nextAllowedAttackTime;
 
         if (Input.GetButtonDown("Fire1") && canAttack)
         {

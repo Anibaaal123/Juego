@@ -31,7 +31,7 @@ public class FireVent : MonoBehaviour
     [SerializeField] private float warningGrowTime = 1.0f;
 
     [Header("Colores de la grieta")]
-    [SerializeField] private Color inactiveColor = new Color(0.32f, 0.12f, 0.08f, 0.95f);
+    [SerializeField] private Color inactiveColor = new Color(0.16f, 0.05f, 0.04f, 0.45f);
     [SerializeField] private Color warningColor = new Color(1f, 0.55f, 0.1f, 1f);
     [SerializeField] private Color activeColor = new Color(1f, 0.4f, 0.05f, 1f);
     [SerializeField] private float warningBlinkHz = 8f;
@@ -152,7 +152,7 @@ public class FireVent : MonoBehaviour
             PlayerHealth player = hit.GetComponentInParent<PlayerHealth>();
             if (player != null)
             {
-                if (handled.Add(player) && TryTick(player)) player.TakeDamage(damagePerTick);
+                if (handled.Add(player) && TryTick(player)) player.TakeDamage(damagePerTick, true); // el fuego del piso no se bloquea
                 continue;
             }
 

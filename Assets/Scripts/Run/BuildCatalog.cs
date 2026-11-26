@@ -73,7 +73,7 @@ public static class BuildCatalog
         switch (skill)
         {
             case SkillType.Parry:
-                return "Clic derecho en el momento justo (ventana de 0.10 s): anulas el golpe, aturdes al jefe 0.8 s y devuelves sus bolas de fuego.";
+                return "Al apretar clic derecho justo antes de un golpe (ventana de 0.10 s) lo anulas por completo, aturdes al jefe 0.8 s y devuelves sus bolas de fuego.";
             case SkillType.Combo:
                 return "Clics seguidos encadenan 3 golpes. El tercero hace ×1.8 de daño y empuja al jefe.";
             case SkillType.OndaEspada:

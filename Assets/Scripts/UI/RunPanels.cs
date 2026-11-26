@@ -43,7 +43,7 @@ public static class RunPanels
         Time.timeScale = paused ? 0f : 1f;
         SetEnabled(Object.FindFirstObjectByType<PlayerMovement>(), !paused);
         SetEnabled(Object.FindFirstObjectByType<PlayerAttack>(), !paused);
-        SetEnabled(Object.FindFirstObjectByType<PlayerParry>(), !paused);
+        SetEnabled(Object.FindFirstObjectByType<PlayerGuard>(), !paused);
     }
 
     private static void SetEnabled(Behaviour behaviour, bool enabled)

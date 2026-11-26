@@ -30,7 +30,7 @@ public class PlayerHealth : MonoBehaviour
     private int currentHealth;
     private bool isDead = false;
     private float invulnerableUntil = -1f;
-    private PlayerParry parry;
+    private PlayerGuard guard;
 
     [HideInInspector] public bool isInvulnerable = false;
 
@@ -76,13 +76,23 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    public void TakeDamage(int damage)
+    /// <summary>
+    /// Aplica daño al jugador. Los golpes de los enemigos se pueden cubrir (daño reducido) o parar con la habilidad
+    /// Parry (daño anulado); el fuego del piso y otros peligros del escenario usan unblockable = true.
+    /// </summary>
+    public void TakeDamage(int damage, bool unblockable = false)
     {
         if (isDead || isInvulnerable || Time.time < invulnerableUntil) return;
 
-        // Habilidad Parry: si la ventana está abierta, el golpe se anula
-        if (parry == null) parry = GetComponent<PlayerParry>();
-        if (parry != null && parry.TryAbsorb()) return;
+        if (!unblockable)
+        {
+            if (guard == null) guard = GetComponent<PlayerGuard>();
+            if (guard != null)
+            {
+                if (guard.TryAbsorb()) return;                          // Parry: el golpe se anula por completo
+                if (guard.IsGuarding) damage = guard.Block(damage);     // Cubierto: se recibe solo una parte
+            }
+        }
 
         currentHealth = Mathf.Max(0, currentHealth - damage);
         CombatStats.RegisterHit(damage);

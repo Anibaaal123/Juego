@@ -15,7 +15,7 @@ public class HazardFire : MonoBehaviour
             PlayerHealth playerHealth = collision.GetComponent<PlayerHealth>();
             if (playerHealth != null)
             {
-                playerHealth.TakeDamage(damagePerTick);
+                playerHealth.TakeDamage(damagePerTick, true); // los peligros del escenario no se bloquean
                 nextDamageTime = Time.time + damageInterval;
             }
         }
