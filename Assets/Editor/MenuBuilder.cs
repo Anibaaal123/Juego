@@ -94,7 +94,7 @@ public static class MenuBuilder
         // Panel de controles
         var controlsPanel = CreateImage(canvasGo.transform, "PanelControles", LoadSprite(ButtonSpritePath), new Color(0.06f, 0.02f, 0.1f, 0.92f));
         controlsPanel.type = Image.Type.Sliced;
-        Place(controlsPanel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -110f), new Vector2(900f, 560f));
+        Place(controlsPanel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -100f), new Vector2(900f, 640f));
 
         var controlsTitle = CreateText(controlsPanel.transform, "Titulo", "CONTROLES", font, 56, Gold, FontStyle.Bold);
         Place(controlsTitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -60f), new Vector2(800f, 80f));
@@ -104,11 +104,12 @@ public static class MenuBuilder
             "Golpe:  Clic izquierdo\n" +
             "Golpe cargado:  mantener clic 0.6 s y soltar\n" +
             "Esquiva (dash):  Shift izquierdo\n" +
+            "Parry (habilidad):  clic derecho\n" +
             "Reiniciar partida:  R      Volver al menú:  Esc",
             font, 34, Color.white, FontStyle.Normal);
         controlsText.alignment = TextAnchor.MiddleCenter;
         controlsText.lineSpacing = 1.25f;
-        Place(controlsText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 10f), new Vector2(820f, 320f));
+        Place(controlsText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 10f), new Vector2(820f, 380f));
         Button backButton = CreateButton(controlsPanel.transform, "Volver", "VOLVER", font, Vector2.zero);
         Place((RectTransform)backButton.transform, new Vector2(0.5f, 0f), new Vector2(0f, 75f), new Vector2(360f, 90f));
         controlsPanel.gameObject.SetActive(false);

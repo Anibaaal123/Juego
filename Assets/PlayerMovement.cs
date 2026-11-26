@@ -29,8 +29,11 @@ public class PlayerMovement : MonoBehaviour
     private PlayerAttack playerAttack;
     private float horizontalInput;
     private bool isGrounded;
-    private bool canDash = true;
     private bool isDashing = false;
+
+    // Cargas del dash: 1 (2 con la habilidad "Dash doble"). Cada carga se recupera tras 'dashCooldown' segundos.
+    private int dashCharges = 1;
+    private float dashRechargeTimer;
 
     // Ralentización temporal (por ejemplo, baldosas eléctricas)
     private float speedMultiplier = 1f;
@@ -42,7 +45,20 @@ public class PlayerMovement : MonoBehaviour
     /// <summary>True si los pies tocan el suelo o una plataforma.</summary>
     public bool IsGrounded => isGrounded;
 
-    /// <summary>Tiempo de espera entre dashes. Lo ajusta PlayerRunStats al aplicar mejoras.</summary>
+    /// <summary>Cargas máximas del dash (2 con la habilidad "Dash doble").</summary>
+    public int MaxDashCharges => RunState.Has(SkillType.DashDoble) ? 2 : 1;
+
+    /// <summary>Cargas de dash disponibles ahora.</summary>
+    public int DashCharges => dashCharges;
+
+    /// <summary>Deja todas las cargas del dash listas.</summary>
+    public void RefillDashCharges()
+    {
+        dashCharges = MaxDashCharges;
+        dashRechargeTimer = 0f;
+    }
+
+    /// <summary>Tiempo de espera para recuperar una carga del dash. Lo ajusta PlayerRunStats según el atributo Dash.</summary>
     public float DashCooldown
     {
         get => dashCooldown;
@@ -63,8 +79,15 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        dashCharges = MaxDashCharges;
+    }
+
     private void Update()
     {
+        UpdateDashRecharge();
+
         if (isDashing) return;
 
         horizontalInput = Input.GetAxisRaw("Horizontal");
@@ -89,9 +112,9 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // Dash con Shift
-        if (Input.GetKeyDown(KeyCode.LeftShift) && canDash)
+        if (Input.GetKeyDown(KeyCode.LeftShift))
         {
-            StartCoroutine(PerformDashRoutine());
+            TryStartDash();
         }
 
         FlipSprite();
@@ -136,9 +159,36 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    private void UpdateDashRecharge()
+    {
+        int max = MaxDashCharges;
+        if (dashCharges > max) dashCharges = max;
+
+        if (dashCharges >= max)
+        {
+            dashRechargeTimer = 0f;
+            return;
+        }
+
+        dashRechargeTimer += Time.deltaTime;
+        if (dashRechargeTimer >= dashCooldown)
+        {
+            dashCharges++;
+            dashRechargeTimer = 0f;
+        }
+    }
+
+    /// <summary>Intenta hacer un dash. Devuelve false si ya está en uno o no quedan cargas.</summary>
+    public bool TryStartDash()
+    {
+        if (isDashing || dashCharges <= 0) return false;
+        dashCharges--;
+        StartCoroutine(PerformDashRoutine());
+        return true;
+    }
+
     private IEnumerator PerformDashRoutine()
     {
-        canDash = false;
         isDashing = true;
 
         if (playerHealth != null) playerHealth.isInvulnerable = true;
@@ -159,9 +209,6 @@ public class PlayerMovement : MonoBehaviour
         if (playerHealth != null) playerHealth.isInvulnerable = false;
         if (spriteRenderer != null) spriteRenderer.color = Color.white;
         isDashing = false;
-
-        yield return new WaitForSeconds(dashCooldown);
-        canDash = true;
     }
 
     private void FlipSprite()

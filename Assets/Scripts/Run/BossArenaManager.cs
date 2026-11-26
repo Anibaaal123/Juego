@@ -4,29 +4,38 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// Controla una arena del Boss Rush:
-///   Jefe derrotado → (1.0 s) aparecen 2 pedestales con mejoras distintas → el jugador pisa uno →
-///   el otro se destruye → (1.5 s) se abre la puerta a la siguiente arena.
-/// Si es la última arena (sin escena siguiente), muestra la victoria y vuelve al menú principal.
+/// Controla una arena del Boss Rush.
+///
+/// Al empezar la primera arena de la partida se abre la tienda inicial para gastar los puntos de arranque.
+/// Mientras dura el combate se miden el tiempo, los golpes recibidos y la precisión (CombatStats).
+///
+/// Al derrotar al jefe:
+///   1. Resumen del rendimiento con la nota (S/A/B/C) y los puntos de mejora que gana.
+///   2. Si hay una arena siguiente: se restaura la vida, se abre la tienda y luego la puerta (1.5 s después).
+///   3. Si es la última arena: mensaje de victoria y vuelta al menú principal.
 /// Esc abandona la partida y vuelve al menú.
 /// </summary>
 public class BossArenaManager : MonoBehaviour
 {
     [Header("Jefe de esta arena")]
     [SerializeField] private EnemyHealth boss;
+    [SerializeField] private string bossName = "El Jefe";
 
-    [Header("Recompensa")]
+    [Header("Nota del combate")]
+    [Tooltip("Tiempo (s) por debajo del cual se obtiene el máximo de puntos de tiempo")]
+    [SerializeField] private float fastTime = 60f;
+    [Tooltip("Tiempo (s) a partir del cual no se obtienen puntos de tiempo")]
+    [SerializeField] private float slowTime = 150f;
+
+    [Header("Mejoras")]
+    [Tooltip("Abrir la tienda de puntos al vencer al jefe")]
+    [SerializeField] private bool offerUpgrades = true;
+    [Tooltip("Abrir la tienda antes del combate (solo en la primera arena de la partida)")]
+    [SerializeField] private bool showStartShop = false;
     [Tooltip("Al derrotar al jefe, el jugador recupera toda su vida")]
     [SerializeField] private bool healPlayerOnVictory = true;
-
-    [Header("Pedestales")]
-    [SerializeField] private bool spawnPedestals = true;
-    [SerializeField] private float pedestalSpawnDelay = 1.0f;
-    [Tooltip("Posiciones (base) de los 2 pedestales")]
-    [SerializeField] private Vector2[] pedestalPositions = { new Vector2(-3f, -2.5f), new Vector2(3f, -2.5f) };
-    [SerializeField] private Sprite pedestalSprite;
-    [SerializeField] private Sprite orbSprite;
-    [SerializeField] private int sortingOrder = 4;
+    [Tooltip("Segundos entre la muerte del jefe y la aparición del resumen")]
+    [SerializeField] private float summaryDelay = 1.2f;
 
     [Header("Salida")]
     [SerializeField] private ExitDoor exitDoor;
@@ -41,13 +50,12 @@ public class BossArenaManager : MonoBehaviour
     [Header("Mensajes en pantalla")]
     [SerializeField] private Text messageText;
 
-    private UpgradePedestal[] pedestals;
-    private bool upgradeTaken;
-
     private void Start()
     {
+        Time.timeScale = 1f;
         ShowMessage("");
         if (boss != null) boss.Died += _ => StartCoroutine(VictorySequence());
+        StartCoroutine(StartSequence());
     }
 
     private void Update()
@@ -59,20 +67,37 @@ public class BossArenaManager : MonoBehaviour
         }
     }
 
+    private IEnumerator StartSequence()
+    {
+        yield return null; // deja que PlayerRunStats aplique la build antes de abrir nada
+
+        if (showStartShop && !RunState.StartShopDone)
+        {
+            RunState.StartShopDone = true;
+            yield return RunPanels.ShowShop(true);
+        }
+
+        CombatStats.Begin();
+    }
+
     private IEnumerator VictorySequence()
     {
         bool isLastArena = exitDoor == null || string.IsNullOrEmpty(exitDoor.NextSceneName);
 
-        if (healPlayerOnVictory && !isLastArena) HealPlayer();
-        ShowMessage(healPlayerOnVictory && !isLastArena ? "¡Jefe derrotado!\nVida restaurada" : "¡Jefe derrotado!");
-        yield return new WaitForSeconds(pedestalSpawnDelay);
+        CombatStats.End();
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        PlayerHealth playerHealth = playerObj != null ? playerObj.GetComponent<PlayerHealth>() : null;
+        float healthFraction = playerHealth != null ? playerHealth.CurrentHealth / (float)playerHealth.MaxHealth : 1f;
+        PerformanceReport report = PerformanceReport.Build(fastTime, slowTime, healthFraction);
 
-        if (spawnPedestals)
-        {
-            SpawnPedestals();
-            ShowMessage("Elige una mejora");
-            yield return new WaitUntil(() => upgradeTaken);
-        }
+        ShowMessage("¡Jefe derrotado!");
+        yield return new WaitForSeconds(summaryDelay);
+
+        // Si el jugador murió mientras tanto, su reinicio de partida ya está en marcha
+        if (playerHealth != null && playerHealth.IsDead) yield break;
+
+        yield return RunPanels.ShowSummary(report, bossName, isLastArena);
+        RunState.BossesDefeated++;
 
         if (isLastArena)
         {
@@ -83,98 +108,24 @@ public class BossArenaManager : MonoBehaviour
             yield break;
         }
 
+        RunState.Points += report.Points;
+
+        if (healPlayerOnVictory)
+        {
+            HealPlayer(playerHealth);
+            ShowMessage("Vida restaurada");
+        }
+
+        if (offerUpgrades) yield return RunPanels.ShowShop(false);
+
         yield return new WaitForSeconds(doorOpenDelay);
         exitDoor.Open();
         ShowMessage("La puerta se abrió →");
     }
 
-    private void HealPlayer()
+    private void HealPlayer(PlayerHealth health)
     {
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        PlayerHealth health = playerObj != null ? playerObj.GetComponent<PlayerHealth>() : null;
         if (health != null && !health.IsDead) health.SetHealth(health.MaxHealth, health.MaxHealth);
-    }
-
-    private void SpawnPedestals()
-    {
-        // Dos tipos distintos al azar entre Poder, Agilidad y Vital; cada uno tira su rareza
-        UpgradeType first = (UpgradeType)Random.Range(0, 3);
-        UpgradeType second = (UpgradeType)(((int)first + Random.Range(1, 3)) % 3);
-        UpgradeType[] types = { first, second };
-
-        pedestals = new UpgradePedestal[pedestalPositions.Length];
-        for (int i = 0; i < pedestalPositions.Length; i++)
-        {
-            var upgrade = new Upgrade(types[i % types.Length], Upgrade.RollRarity());
-            pedestals[i] = CreatePedestal(pedestalPositions[i], upgrade);
-        }
-    }
-
-    private void OnPedestalTaken(UpgradePedestal taken)
-    {
-        upgradeTaken = true;
-        foreach (UpgradePedestal p in pedestals)
-        {
-            if (p != null && p != taken) Destroy(p.gameObject);
-        }
-        ShowMessage($"{taken.Upgrade.Title} ({taken.Upgrade.RarityName}): {taken.Upgrade.EffectText}");
-    }
-
-    private UpgradePedestal CreatePedestal(Vector2 basePosition, Upgrade upgrade)
-    {
-        var root = new GameObject($"Pedestal_{upgrade.Type}");
-        root.transform.position = basePosition;
-
-        // Base de piedra
-        var baseGo = new GameObject("Base");
-        baseGo.transform.SetParent(root.transform, false);
-        baseGo.transform.localPosition = new Vector3(0f, 0.5f, 0f);
-        var baseSr = baseGo.AddComponent<SpriteRenderer>();
-        baseSr.sprite = pedestalSprite;
-        baseSr.drawMode = SpriteDrawMode.Sliced;
-        baseSr.size = new Vector2(1.4f, 1.0f);
-        baseSr.color = new Color(0.45f, 0.42f, 0.5f);
-        baseSr.sortingOrder = sortingOrder;
-
-        // Orbe flotante teñido según la rareza
-        var orbGo = new GameObject("Orbe");
-        orbGo.transform.SetParent(root.transform, false);
-        orbGo.transform.localPosition = new Vector3(0f, 1.9f, 0f);
-        orbGo.transform.localScale = Vector3.one * 1.6f;
-        var orbSr = orbGo.AddComponent<SpriteRenderer>();
-        orbSr.sprite = orbSprite;
-        orbSr.sortingOrder = sortingOrder + 1;
-
-        // Texto en el mundo con el nombre, rareza y efecto
-        var canvasGo = new GameObject("Etiqueta", typeof(RectTransform));
-        canvasGo.transform.SetParent(root.transform, false);
-        canvasGo.transform.localPosition = new Vector3(0f, 4.2f, 0f);
-        canvasGo.transform.localScale = Vector3.one * 0.03f;
-        var canvas = canvasGo.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.WorldSpace;
-        canvas.sortingOrder = sortingOrder + 10;
-        ((RectTransform)canvasGo.transform).sizeDelta = new Vector2(360f, 120f);
-
-        var textGo = new GameObject("Texto", typeof(RectTransform));
-        textGo.transform.SetParent(canvasGo.transform, false);
-        var rt = (RectTransform)textGo.transform;
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = rt.offsetMax = Vector2.zero;
-        var text = textGo.AddComponent<Text>();
-        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        text.fontSize = 28;
-        text.alignment = TextAnchor.MiddleCenter;
-        text.supportRichText = true;
-        text.horizontalOverflow = HorizontalWrapMode.Overflow;
-        text.verticalOverflow = VerticalWrapMode.Overflow;
-        var outline = textGo.AddComponent<Outline>();
-        outline.effectColor = Color.black;
-        outline.effectDistance = new Vector2(2f, -2f);
-
-        var pedestal = root.AddComponent<UpgradePedestal>();
-        pedestal.Setup(upgrade, orbSr, text, OnPedestalTaken);
-        return pedestal;
     }
 
     private void ShowMessage(string message)

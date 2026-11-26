@@ -8,10 +8,16 @@ using UnityEngine;
 ///   • Cargado: en el suelo, mantener 0.6 s y soltar. Daño ×3.5, alcance ×1.5 y empuje fuerte.
 ///     Mientras carga se mueve al 35 % de velocidad.
 /// En el aire no se puede cargar: el ataque normal sale al instante.
+///
+/// Habilidades (se compran en la tienda, ver RunState):
+///   • Combo de 3 golpes: clics seguidos (menos de 0.55 s entre uno y otro) encadenan 3 golpes;
+///     el tercero hace ×1.8 de daño, tiene más alcance y empuja al jefe.
+///   • Onda de espada: el golpe cargado lanza además una onda de corte a distancia (×1.5 del daño base).
+///   • Vampirismo: cada golpe que acierta cura 2 HP.
 /// </summary>
 public class PlayerAttack : MonoBehaviour
 {
-    private enum AttackKind { Normal, Charged }
+    private enum AttackKind { Normal, Charged, Finisher }
 
     [Header("Attack Settings")]
     [SerializeField] private int attackDamage = 20;
@@ -33,6 +39,17 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] private Color chargingColor = new Color(1f, 0.85f, 0.4f, 1f);
     [SerializeField] private Color fullChargeColor = new Color(1f, 1f, 0.75f, 1f);
 
+    [Header("Habilidad: Combo de 3 golpes")]
+    [Tooltip("Tiempo máximo entre el final de un golpe y el siguiente clic para seguir el combo")]
+    [SerializeField] private float comboWindow = 0.55f;
+    [SerializeField] private float finisherDamageMultiplier = 1.8f;
+    [SerializeField] private float finisherRangeMultiplier = 1.2f;
+    [SerializeField] private float finisherDuration = 0.45f;
+    [SerializeField] private float finisherKnockback = 1.0f;
+
+    [Header("Habilidad: Onda de espada")]
+    [SerializeField] private float waveDamageMultiplier = 1.5f;
+
     [Header("Game feel")]
     [SerializeField] private float normalHitStop = 0.05f;
     [SerializeField] private float chargedHitStop = 0.12f;
@@ -51,13 +68,23 @@ public class PlayerAttack : MonoBehaviour
     private float nextAllowedAttackTime = 0f;
     private bool isCharging = false;
     private float chargeStartTime;
+    private int comboStep;
+    private float lastAttackEndTime = -999f;
     private PlayerMovement movement;
+    private PlayerHealth health;
 
-    /// <summary>Daño por golpe. Lo ajusta PlayerRunStats al aplicar mejoras.</summary>
+    /// <summary>Daño por golpe. Lo ajusta PlayerRunStats según el atributo Daño.</summary>
     public int AttackDamage
     {
         get => attackDamage;
         set => attackDamage = Mathf.Max(1, value);
+    }
+
+    /// <summary>Segundos de carga del golpe cargado. Lo ajusta PlayerRunStats según el atributo Carga.</summary>
+    public float ChargeTime
+    {
+        get => chargeTime;
+        set => chargeTime = Mathf.Max(0.2f, value);
     }
 
     /// <summary>Multiplicador de velocidad que PlayerMovement aplica mientras se carga el ataque.</summary>
@@ -71,6 +98,7 @@ public class PlayerAttack : MonoBehaviour
         if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
         if (audioSource == null) audioSource = GetComponent<AudioSource>();
         movement = GetComponent<PlayerMovement>();
+        health = GetComponent<PlayerHealth>();
     }
 
     private void OnDisable()
@@ -89,7 +117,7 @@ public class PlayerAttack : MonoBehaviour
         {
             if (!grounded)
             {
-                StartCoroutine(PerformAttackRoutine(AttackKind.Normal));
+                BeginNormalAttack();
             }
             else
             {
@@ -104,11 +132,42 @@ public class PlayerAttack : MonoBehaviour
 
             if (!Input.GetButton("Fire1"))
             {
-                AttackKind kind = IsFullyCharged ? AttackKind.Charged : AttackKind.Normal;
+                bool charged = IsFullyCharged;
                 CancelCharge();
-                StartCoroutine(PerformAttackRoutine(kind));
+                if (charged)
+                {
+                    comboStep = 0;
+                    StartCoroutine(PerformAttackRoutine(AttackKind.Charged));
+                }
+                else
+                {
+                    BeginNormalAttack();
+                }
             }
         }
+    }
+
+    /// <summary>Lanza un golpe normal; con la habilidad Combo, el tercer golpe seguido es el remate.</summary>
+    private void BeginNormalAttack()
+    {
+        AttackKind kind = AttackKind.Normal;
+
+        if (RunState.Has(SkillType.Combo))
+        {
+            if (Time.time - lastAttackEndTime > comboWindow) comboStep = 0;
+            comboStep++;
+            if (comboStep >= 3)
+            {
+                kind = AttackKind.Finisher;
+                comboStep = 0;
+            }
+        }
+        else
+        {
+            comboStep = 0;
+        }
+
+        StartCoroutine(PerformAttackRoutine(kind));
     }
 
     private void UpdateChargeVisual()
@@ -149,17 +208,24 @@ public class PlayerAttack : MonoBehaviour
     private IEnumerator PerformAttackRoutine(AttackKind kind)
     {
         isAttacking = true;
-        float duration = kind == AttackKind.Charged ? chargedAttackDuration : attackDuration;
+        CombatStats.RegisterSwing();
+
+        float duration = kind == AttackKind.Charged ? chargedAttackDuration
+                       : kind == AttackKind.Finisher ? finisherDuration
+                       : attackDuration;
         float windupTime = duration * 0.4f;
 
         if (animator != null) animator.SetTrigger("Attack");
         if (audioSource != null && swordSlashSound != null)
         {
-            audioSource.pitch = kind == AttackKind.Charged ? 0.8f : 1f;
+            audioSource.pitch = kind == AttackKind.Charged ? 0.8f : kind == AttackKind.Finisher ? 0.9f : 1f;
             audioSource.PlayOneShot(swordSlashSound);
         }
 
         yield return new WaitForSeconds(windupTime);
+
+        Vector2 forward = new Vector2(spriteRenderer != null && spriteRenderer.flipX ? -1f : 1f, 0f);
+        Vector2 basePoint = attackPoint != null ? (Vector2)attackPoint.position : (Vector2)transform.position;
 
         Vector2 center;
         float radius;
@@ -167,32 +233,53 @@ public class PlayerAttack : MonoBehaviour
         switch (kind)
         {
             case AttackKind.Charged:
-                Vector2 forward = new Vector2(spriteRenderer != null && spriteRenderer.flipX ? -1f : 1f, 0f);
-                center = (attackPoint != null ? (Vector2)attackPoint.position : (Vector2)transform.position) + forward * 0.6f;
+                center = basePoint + forward * 0.6f;
                 radius = attackRange * chargedRangeMultiplier;
                 damage = Mathf.RoundToInt(attackDamage * chargedDamageMultiplier);
                 break;
+            case AttackKind.Finisher:
+                center = basePoint + forward * 0.3f;
+                radius = attackRange * finisherRangeMultiplier;
+                damage = Mathf.RoundToInt(attackDamage * finisherDamageMultiplier);
+                break;
             default:
-                center = attackPoint != null ? (Vector2)attackPoint.position : (Vector2)transform.position;
+                center = basePoint;
                 radius = attackRange;
                 damage = attackDamage;
                 break;
         }
 
-        ShowSlash(kind, center);
+        ShowSlash(kind);
         bool hitSomething = DealDamage(center, radius, damage, kind);
+        CombatStats.RegisterSwingResult(hitSomething, kind == AttackKind.Charged);
 
         if (hitSomething)
         {
             bool strong = kind == AttackKind.Charged;
-            GameFeel.HitStop(strong ? chargedHitStop : normalHitStop);
-            GameFeel.Shake(strong ? chargedShake : normalShake, strong ? 0.25f : 0.12f);
+            bool medium = kind == AttackKind.Finisher;
+            GameFeel.HitStop(strong ? chargedHitStop : medium ? 0.08f : normalHitStop);
+            GameFeel.Shake(strong ? chargedShake : medium ? 0.2f : normalShake, strong ? 0.25f : 0.12f);
+
+            if (RunState.Has(SkillType.Vampirismo) && health != null && !health.IsDead)
+            {
+                health.Heal(BuildCatalog.VampirismHeal);
+                GameFeel.FloatingText(transform.position + new Vector3(0f, 2.2f, 0f), $"+{BuildCatalog.VampirismHeal}",
+                                      new Color(0.45f, 1f, 0.5f), 0.9f);
+            }
+        }
+
+        if (kind == AttackKind.Charged && RunState.Has(SkillType.OndaEspada))
+        {
+            bool left = spriteRenderer != null && spriteRenderer.flipX;
+            int order = spriteRenderer != null ? spriteRenderer.sortingOrder + 1 : 10;
+            SwordWave.Spawn(basePoint, left, Mathf.RoundToInt(attackDamage * waveDamageMultiplier), order);
         }
 
         yield return new WaitForSeconds(Mathf.Max(0f, duration - windupTime));
 
         if (audioSource != null) audioSource.pitch = 1f;
         isAttacking = false;
+        lastAttackEndTime = Time.time;
         nextAllowedAttackTime = Time.time + attackCooldown;
     }
 
@@ -211,24 +298,29 @@ public class PlayerAttack : MonoBehaviour
 
             any = true;
             Vector2 away = new Vector2(Mathf.Sign(enemy.transform.position.x - transform.position.x), 0f);
-            float push = kind == AttackKind.Charged ? chargedKnockback : normalKnockback;
+            float push = kind == AttackKind.Charged ? chargedKnockback : kind == AttackKind.Finisher ? finisherKnockback : normalKnockback;
             enemy.Knockback(away, push);
         }
         return any;
     }
 
     /// <summary>Medialuna visible que muestra hacia dónde va el golpe.</summary>
-    private void ShowSlash(AttackKind kind, Vector2 center)
+    private void ShowSlash(AttackKind kind)
     {
         int order = spriteRenderer != null ? spriteRenderer.sortingOrder + 1 : 10;
         bool left = spriteRenderer != null && spriteRenderer.flipX;
+        float angle = left ? -90f : 90f;
+
         switch (kind)
         {
             case AttackKind.Charged:
-                ProceduralFx.Slash(transform.position, left ? -90f : 90f, 2.0f, new Color(1f, 0.85f, 0.35f, 1f), order);
+                ProceduralFx.Slash(transform.position, angle, 2.0f, new Color(1f, 0.85f, 0.35f, 1f), order);
+                break;
+            case AttackKind.Finisher:
+                ProceduralFx.Slash(transform.position, angle, 1.6f, new Color(1f, 0.6f, 0.3f, 1f), order);
                 break;
             default:
-                ProceduralFx.Slash(transform.position, left ? -90f : 90f, 1.2f, new Color(1f, 1f, 1f, 0.75f), order);
+                ProceduralFx.Slash(transform.position, angle, 1.2f, new Color(1f, 1f, 1f, 0.75f), order);
                 break;
         }
     }

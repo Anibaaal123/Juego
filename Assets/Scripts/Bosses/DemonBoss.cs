@@ -13,7 +13,7 @@ using UnityEngine;
 /// 7 columnas de lluvia y 2 picadas seguidas.
 /// </summary>
 [RequireComponent(typeof(EnemyHealth))]
-public class DemonBoss : MonoBehaviour
+public class DemonBoss : MonoBehaviour, IStunnable
 {
     private enum Attack { None, Breath, Dive, Rain }
 
@@ -288,6 +288,39 @@ public class DemonBoss : MonoBehaviour
             yield return new WaitForSeconds(0.08f);
         }
         yield return new WaitForSeconds(rainRecovery);
+    }
+
+    // ---------------- Aturdimiento (parry del jugador) ----------------
+
+    /// <summary>Interrumpe el ataque en curso y deja al jefe inmóvil y vulnerable 'duration' segundos.</summary>
+    public void Stun(float duration)
+    {
+        // Durante el rugido (invulnerable) no se puede aturdir
+        if (health.IsDead || health.isInvulnerable) return;
+
+        StopAllCoroutines();
+        DestroyMarkers();
+        StartCoroutine(StunRoutine(duration));
+    }
+
+    private IEnumerator StunRoutine(float duration)
+    {
+        busy = true;
+        SetVelocity(Vector2.zero);
+        GameFeel.FloatingText(transform.position + new Vector3(0f, 4.5f, 0f), "¡ATURDIDO!", new Color(0.6f, 0.85f, 1f), 1.3f);
+
+        float t = 0f;
+        while (t < duration)
+        {
+            SetVelocity(Vector2.zero);
+            spriteRenderer.color = Mathf.Repeat(t * 8f, 1f) < 0.5f ? new Color(0.6f, 0.8f, 1f) : health.BaseColor;
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        spriteRenderer.color = health.BaseColor;
+        nextAttackTime = Time.time + 0.6f;
+        busy = false;
     }
 
     // ---------------- Fase 2 ----------------

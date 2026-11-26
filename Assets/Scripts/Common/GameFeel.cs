@@ -94,10 +94,16 @@ public class GameFeel : MonoBehaviour
     /// <summary>Muestra un número que sube y se desvanece en 0.7 s.</summary>
     public static void DamageNumber(Vector3 worldPosition, int amount, Color color, float scale = 1f)
     {
-        Instance.StartCoroutine(Instance.DamageNumberRoutine(worldPosition, amount, color, scale));
+        FloatingText(worldPosition, amount.ToString(), color, scale);
     }
 
-    private IEnumerator DamageNumberRoutine(Vector3 position, int amount, Color color, float scale)
+    /// <summary>Muestra un texto cualquiera (por ejemplo "¡PARRY!") que sube y se desvanece en 0.7 s.</summary>
+    public static void FloatingText(Vector3 worldPosition, string content, Color color, float scale = 1f)
+    {
+        Instance.StartCoroutine(Instance.FloatingTextRoutine(worldPosition, content, color, scale));
+    }
+
+    private IEnumerator FloatingTextRoutine(Vector3 position, string content, Color color, float scale)
     {
         var canvasGo = new GameObject("DamageNumber", typeof(RectTransform));
         canvasGo.transform.position = position + new Vector3(Random.Range(-0.4f, 0.4f), 0f, 0f);
@@ -105,7 +111,7 @@ public class GameFeel : MonoBehaviour
         var canvas = canvasGo.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
         canvas.sortingOrder = 100;
-        ((RectTransform)canvasGo.transform).sizeDelta = new Vector2(200f, 60f);
+        ((RectTransform)canvasGo.transform).sizeDelta = new Vector2(400f, 60f);
 
         var textGo = new GameObject("Texto", typeof(RectTransform));
         textGo.transform.SetParent(canvasGo.transform, false);
@@ -119,7 +125,7 @@ public class GameFeel : MonoBehaviour
         text.fontStyle = FontStyle.Bold;
         text.alignment = TextAnchor.MiddleCenter;
         text.horizontalOverflow = HorizontalWrapMode.Overflow;
-        text.text = amount.ToString();
+        text.text = content;
         var outline = textGo.AddComponent<Outline>();
         outline.effectColor = Color.black;
         outline.effectDistance = new Vector2(2f, -2f);

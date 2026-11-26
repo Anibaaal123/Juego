@@ -11,7 +11,7 @@ using UnityEngine;
 /// Todos los valores son editables en el Inspector.
 /// </summary>
 [RequireComponent(typeof(EnemyHealth))]
-public class CentinelaBoss : MonoBehaviour
+public class CentinelaBoss : MonoBehaviour, IStunnable
 {
     private enum State { Idle, Reposition, Attacking, Dead }
 
@@ -268,6 +268,36 @@ public class CentinelaBoss : MonoBehaviour
         }
 
         PlaySound(fireballSound);
+    }
+
+    // ---------------- Aturdimiento (parry del jugador) ----------------
+
+    /// <summary>Interrumpe el ataque en curso y deja al jefe inmóvil y vulnerable 'duration' segundos.</summary>
+    public void Stun(float duration)
+    {
+        // Mientras es un pilar de fuego (invulnerable) no se puede aturdir
+        if (state == State.Dead || health.IsDead || health.isInvulnerable) return;
+
+        StopAllCoroutines();
+        state = State.Attacking; // bloquea la IA mientras dura el aturdimiento
+        StartCoroutine(StunRoutine(duration));
+    }
+
+    private IEnumerator StunRoutine(float duration)
+    {
+        spriteRenderer.enabled = true;
+        GameFeel.FloatingText(transform.position + new Vector3(0f, 5.5f, 0f), "¡ATURDIDO!", new Color(0.6f, 0.85f, 1f), 1.3f);
+
+        float t = 0f;
+        while (t < duration)
+        {
+            spriteRenderer.color = Mathf.Repeat(t * 8f, 1f) < 0.5f ? new Color(0.6f, 0.8f, 1f) : health.BaseColor;
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        spriteRenderer.color = health.BaseColor;
+        EndAttack(0.6f);
     }
 
     // ---------------- Utilidades ----------------

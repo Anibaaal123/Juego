@@ -8,8 +8,8 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Construye el Boss Rush en el editor:
-///   • Arena 1 (Assets/Scenes/Arena1_Demonio.unity): el jefe demonio original + pedestales de mejora + puerta.
-///   • Arena 2 (Assets/Scenes/Arena2_Centinela.unity): se genera desde la Arena 1 con El Centinela y el piso eléctrico.
+///   • Arena 1 (Assets/Scenes/Arena1_Demonio.unity): el jefe demonio original + resumen/tienda de mejoras + puerta.
+///   • Arena 2 (Assets/Scenes/Arena2_Centinela.unity): se genera desde la Arena 1 con El Centinela y los géiseres de fuego.
 /// Menú: Colossus → Construir Boss Rush. Se puede volver a ejecutar: la Arena 2 se regenera completa
 /// (los cambios hechos a mano dentro de ella se pierden); en la Arena 1 solo se rehacen los objetos del Boss Rush.
 /// </summary>
@@ -18,7 +18,6 @@ public static class ArenaBuilder
     private const string BeastDir = "Assets/Characters/Boss/HellBeast";
     private const string AnimDir = BeastDir + "/Animations";
     private const string TileSpritePath = "Assets/Environment/Common/tile_plate.png";
-    private const string OrbSpritePath = "Assets/Environment/Common/orb.png";
     private const string FireballPrefabPath = "Assets/Prefabs/Fireball.prefab";
     private const string OldArena1Path = "Assets/Scenes/SampleScene.unity";
     public const string Arena1ScenePath = "Assets/Scenes/Arena1_Demonio.unity";
@@ -51,7 +50,6 @@ public static class ArenaBuilder
         ConfigureSprites(BeastDir + "/Burn", SpriteAlignment.BottomCenter);
         ConfigureSprites(BeastDir + "/Fireball", SpriteAlignment.Center);
         ConfigureSingleSprite(TileSpritePath, new Vector4(2, 2, 2, 2));
-        ConfigureSingleSprite(OrbSpritePath, Vector4.zero);
 
         BuildFireballPrefab(LoadSprites(BeastDir + "/Fireball"));
 
@@ -84,7 +82,7 @@ public static class ArenaBuilder
     {
         var scene = EditorSceneManager.OpenScene(Arena1ScenePath, OpenSceneMode.Single);
 
-        // Las monedas daban daño extra fuera del sistema de mejoras: se quitan (las reemplazan los pedestales)
+        // Las monedas daban daño extra fuera del sistema de mejoras: se quitan (las reemplaza la tienda de puntos)
         DestroyIfExists("Coin", "Coin (1)", "Coin (2)");
 
         GameObject boss = GameObject.Find("Enemy");
@@ -93,7 +91,8 @@ public static class ArenaBuilder
 
         if (boss != null) SetupDemonBoss(boss);
 
-        SetupBossRushObjects(scene, bossHealth, nextScene: "Arena2_Centinela", spawnPedestals: true);
+        SetupBossRushObjects(scene, bossHealth, nextScene: "Arena2_Centinela", offerUpgrades: true, showStartShop: true,
+                             bossName: "El Demonio", fastTime: 60f, slowTime: 150f);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
@@ -156,8 +155,19 @@ public static class ArenaBuilder
         AnimatorController controller = BuildAnimator(idle, breath, burn);
         BossProjectile fireballPrefab = LoadFireballPrefab();
 
-        AssetDatabase.DeleteAsset(Arena2ScenePath);
-        if (!AssetDatabase.CopyAsset(Arena1ScenePath, Arena2ScenePath))
+        // La Arena 2 parte de una copia de la Arena 1. Si ya existe se sobrescribe conservando su GUID: así
+        // Build Settings y cualquier referencia a la escena siguen válidos (borrarla y copiarla le daría un GUID nuevo).
+        var arena1 = EditorSceneManager.OpenScene(Arena1ScenePath, OpenSceneMode.Single);
+        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(Arena2ScenePath) != null)
+        {
+            if (!EditorSceneManager.SaveScene(arena1, Arena2ScenePath, true))
+            {
+                Debug.LogError("[ArenaBuilder] No se pudo sobrescribir " + Arena2ScenePath);
+                return;
+            }
+            AssetDatabase.ImportAsset(Arena2ScenePath, ImportAssetOptions.ForceSynchronousImport);
+        }
+        else if (!AssetDatabase.CopyAsset(Arena1ScenePath, Arena2ScenePath))
         {
             Debug.LogError("[ArenaBuilder] No se pudo copiar " + Arena1ScenePath);
             return;
@@ -190,10 +200,13 @@ public static class ArenaBuilder
         GameObject boss = BuildBoss(idle[0], controller, fireballPrefab, groundTop, arenaMin + 2.5f, arenaMax - 2.5f,
                                     baseOrder, bossSlider, deathSound, fireSound);
 
-        BuildElectricFloor(groundTop, arenaMin, arenaMax, baseOrder - 1, boss.GetComponent<EnemyHealth>());
+        // La columna de fuego de los géiseres reutiliza los cuadros del pilar de llamas del Centinela (Burn 5 y 6)
+        BuildFireFloor(groundTop, arenaMin, arenaMax, baseOrder - 1, baseOrder + 2, boss.GetComponent<EnemyHealth>(),
+                       burn.Skip(4).ToArray());
 
-        // Por ahora es la última arena: sin pedestales ni puerta (se activan cuando exista la Arena 3)
-        SetupBossRushObjects(scene, boss.GetComponent<EnemyHealth>(), nextScene: "", spawnPedestals: false);
+        // Por ahora es la última arena: muestra el resumen, pero sin tienda ni puerta (se activan cuando exista la Arena 3)
+        SetupBossRushObjects(scene, boss.GetComponent<EnemyHealth>(), nextScene: "", offerUpgrades: false, showStartShop: false,
+                             bossName: "El Centinela", fastTime: 50f, slowTime: 140f);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
@@ -202,7 +215,8 @@ public static class ArenaBuilder
     // ---------------- Objetos comunes del Boss Rush ----------------
 
     private static void SetupBossRushObjects(UnityEngine.SceneManagement.Scene scene, EnemyHealth boss,
-                                             string nextScene, bool spawnPedestals)
+                                             string nextScene, bool offerUpgrades, bool showStartShop,
+                                             string bossName, float fastTime, float slowTime)
     {
         DestroyIfExists(ManagerName, DoorName, MessageName);
 
@@ -223,7 +237,6 @@ public static class ArenaBuilder
         }
 
         Sprite plate = AssetDatabase.LoadAssetAtPath<Sprite>(TileSpritePath);
-        Sprite orb = AssetDatabase.LoadAssetAtPath<Sprite>(OrbSpritePath);
 
         ExitDoor door = string.IsNullOrEmpty(nextScene) ? null : BuildDoor(plate, arenaMax - 2.5f, groundTop, baseOrder - 1, nextScene);
         Text message = BuildMessageText(scene);
@@ -232,15 +245,11 @@ public static class ArenaBuilder
         var manager = managerGo.AddComponent<BossArenaManager>();
         var so = new SerializedObject(manager);
         so.FindProperty("boss").objectReferenceValue = boss;
-        so.FindProperty("spawnPedestals").boolValue = spawnPedestals;
-        SerializedProperty positions = so.FindProperty("pedestalPositions");
-        positions.arraySize = 2;
-        // Separados para que sus textos no choquen con la plataforma central
-        positions.GetArrayElementAtIndex(0).vector2Value = new Vector2(-8f, groundTop);
-        positions.GetArrayElementAtIndex(1).vector2Value = new Vector2(6f, groundTop);
-        so.FindProperty("pedestalSprite").objectReferenceValue = plate;
-        so.FindProperty("orbSprite").objectReferenceValue = orb;
-        so.FindProperty("sortingOrder").intValue = baseOrder - 1;
+        so.FindProperty("bossName").stringValue = bossName;
+        so.FindProperty("fastTime").floatValue = fastTime;
+        so.FindProperty("slowTime").floatValue = slowTime;
+        so.FindProperty("offerUpgrades").boolValue = offerUpgrades;
+        so.FindProperty("showStartShop").boolValue = showStartShop;
         so.FindProperty("exitDoor").objectReferenceValue = door;
         so.FindProperty("messageText").objectReferenceValue = message;
         so.ApplyModifiedPropertiesWithoutUndo();
@@ -505,42 +514,49 @@ public static class ArenaBuilder
         return boss;
     }
 
-    // ---------------- Piso eléctrico ----------------
+    // ---------------- Géiseres de fuego ----------------
 
-    private static void BuildElectricFloor(float groundTop, float arenaMin, float arenaMax, int sortingOrder, EnemyHealth boss)
+    private static void BuildFireFloor(float groundTop, float arenaMin, float arenaMax, int plateOrder, int flameOrder,
+                                       EnemyHealth boss, Sprite[] flameSprites)
     {
         Sprite plate = AssetDatabase.LoadAssetAtPath<Sprite>(TileSpritePath);
 
-        var root = new GameObject("ElectricFloor");
-        var controller = root.AddComponent<ElectricFloorController>();
+        var root = new GameObject("FireFloor");
+        var controller = root.AddComponent<FireFloorController>();
 
-        const int tileCount = 4;
-        const float tileWidth = 7f;
-        const float tileHeight = 0.5f;
+        const int ventCount = 4;
+        const float ventWidth = 7f;
+        const float ventHeight = 0.5f;
         float span = arenaMax - arenaMin;
-        var tiles = new ElectricTile[tileCount];
+        var vents = new FireVent[ventCount];
 
-        for (int i = 0; i < tileCount; i++)
+        for (int i = 0; i < ventCount; i++)
         {
-            // 4 baldosas repartidas en partes iguales a lo ancho de la arena
-            float x = arenaMin + span * (i + 0.5f) / tileCount;
-            var tile = new GameObject($"ElectricTile_{i + 1}");
-            tile.transform.SetParent(root.transform);
-            tile.transform.position = new Vector3(x, groundTop + 0.05f - tileHeight * 0.5f, 0f);
+            // 4 géiseres repartidos en partes iguales a lo ancho de la arena
+            float x = arenaMin + span * (i + 0.5f) / ventCount;
+            var vent = new GameObject($"FireVent_{i + 1}");
+            vent.transform.SetParent(root.transform);
+            vent.transform.position = new Vector3(x, groundTop + 0.05f - ventHeight * 0.5f, 0f);
 
-            var sr = tile.AddComponent<SpriteRenderer>();
+            var sr = vent.AddComponent<SpriteRenderer>();
             sr.sprite = plate;
             sr.drawMode = SpriteDrawMode.Sliced;
-            sr.size = new Vector2(tileWidth, tileHeight);
-            sr.sortingOrder = sortingOrder;
+            sr.size = new Vector2(ventWidth, ventHeight);
+            sr.sortingOrder = plateOrder;
 
-            tiles[i] = tile.AddComponent<ElectricTile>();
+            vents[i] = vent.AddComponent<FireVent>();
+            var vso = new SerializedObject(vents[i]);
+            SerializedProperty sprites = vso.FindProperty("flameSprites");
+            sprites.arraySize = flameSprites.Length;
+            for (int k = 0; k < flameSprites.Length; k++) sprites.GetArrayElementAtIndex(k).objectReferenceValue = flameSprites[k];
+            vso.FindProperty("flameSortingOrder").intValue = flameOrder;
+            vso.ApplyModifiedPropertiesWithoutUndo();
         }
 
         var so = new SerializedObject(controller);
-        SerializedProperty arr = so.FindProperty("tiles");
-        arr.arraySize = tileCount;
-        for (int i = 0; i < tileCount; i++) arr.GetArrayElementAtIndex(i).objectReferenceValue = tiles[i];
+        SerializedProperty arr = so.FindProperty("vents");
+        arr.arraySize = ventCount;
+        for (int i = 0; i < ventCount; i++) arr.GetArrayElementAtIndex(i).objectReferenceValue = vents[i];
         so.FindProperty("boss").objectReferenceValue = boss;
         so.ApplyModifiedPropertiesWithoutUndo();
     }

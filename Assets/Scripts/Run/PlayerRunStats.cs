@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Aplica al jugador las mejoras acumuladas en la partida (RunState) al entrar a cada arena,
-/// y guarda su vida actual antes de pasar a la siguiente.
+/// Aplica al jugador su build (atributos y habilidades de RunState) al entrar a cada arena y cada vez que compra algo,
+/// y guarda su vida actual antes de pasar a la siguiente arena.
 /// Va en el mismo objeto que PlayerAttack, PlayerMovement y PlayerHealth.
 /// </summary>
 public class PlayerRunStats : MonoBehaviour
@@ -13,6 +13,7 @@ public class PlayerRunStats : MonoBehaviour
 
     private int baseDamage;
     private float baseDashCooldown;
+    private float baseChargeTime;
     private int baseMaxHealth;
 
     private void Awake()
@@ -21,8 +22,15 @@ public class PlayerRunStats : MonoBehaviour
         movement = GetComponent<PlayerMovement>();
         health = GetComponent<PlayerHealth>();
 
+        // El parry vive en un componente propio; se agrega solo para no tener que tocar las escenas
+        if (GetComponent<PlayerParry>() == null) gameObject.AddComponent<PlayerParry>();
+
         // Valores base de la escena, antes de cualquier mejora
-        if (attack != null) baseDamage = attack.AttackDamage;
+        if (attack != null)
+        {
+            baseDamage = attack.AttackDamage;
+            baseChargeTime = attack.ChargeTime;
+        }
         if (movement != null) baseDashCooldown = movement.DashCooldown;
         if (health != null) baseMaxHealth = health.MaxHealth;
     }
@@ -30,48 +38,51 @@ public class PlayerRunStats : MonoBehaviour
     private void Start()
     {
         ApplyStats();
-        int max = baseMaxHealth + RunState.BonusMaxHealth;
-        int current = RunState.CarriedHealth >= 0 ? Mathf.Min(RunState.CarriedHealth, max) : max;
-        if (health != null) health.SetHealth(max, current);
-    }
 
-    /// <summary>Recalcula daño, cooldown del dash y vida máxima a partir de los valores base + RunState.</summary>
-    private void ApplyStats()
-    {
-        if (attack != null)
-            attack.AttackDamage = Mathf.RoundToInt(baseDamage * (1f + RunState.DamageBonusPercent));
-
-        if (movement != null)
-            movement.DashCooldown = baseDashCooldown * Mathf.Max(0.1f, 1f - RunState.DashCooldownReductionPercent);
-    }
-
-    /// <summary>Aplica una mejora tomada de un pedestal (permanente durante la partida).</summary>
-    public void ApplyUpgrade(Upgrade upgrade)
-    {
-        RunState.UpgradesTaken++;
-
-        switch (upgrade.Type)
+        if (health != null)
         {
-            case UpgradeType.Poder:
-                RunState.DamageBonusPercent += upgrade.DamagePercent;
-                break;
-            case UpgradeType.Agilidad:
-                RunState.DashCooldownReductionPercent += upgrade.DashReductionPercent;
-                break;
-            case UpgradeType.Vital:
-                RunState.BonusMaxHealth += upgrade.BonusHealth;
-                if (health != null)
-                {
-                    int max = baseMaxHealth + RunState.BonusMaxHealth;
-                    int current = upgrade.HealsToFull ? max : health.CurrentHealth + upgrade.BonusHealth;
-                    health.SetHealth(max, current);
-                }
-                break;
+            int max = MaxHealth();
+            int current = RunState.CarriedHealth >= 0 ? Mathf.Min(RunState.CarriedHealth, max) : max;
+            health.SetHealth(max, current);
         }
 
+        if (movement != null) movement.RefillDashCharges();
+        SkillHud.Create(gameObject);
+    }
+
+    private int MaxHealth() => baseMaxHealth + BuildCatalog.HealthPerLevel * RunState.StatLevel(StatType.Vida);
+
+    /// <summary>Recalcula daño, espera del dash y tiempo de carga a partir de los niveles de atributos.</summary>
+    public void ApplyStats()
+    {
+        if (attack != null)
+        {
+            attack.AttackDamage = Mathf.RoundToInt(baseDamage * (1f + BuildCatalog.DamagePerLevel * RunState.StatLevel(StatType.Dano)));
+            attack.ChargeTime = baseChargeTime - BuildCatalog.ChargeReductionPerLevel * RunState.StatLevel(StatType.Carga);
+        }
+
+        if (movement != null)
+        {
+            float reduction = BuildCatalog.DashReductionPerLevel * RunState.StatLevel(StatType.Dash);
+            movement.DashCooldown = baseDashCooldown * Mathf.Max(0.2f, 1f - reduction);
+        }
+    }
+
+    /// <summary>Se llama al comprar un nivel de atributo en la tienda.</summary>
+    public void OnStatBought(StatType stat)
+    {
         ApplyStats();
-        Debug.Log($"[RUN] Mejora: {upgrade.Title} ({upgrade.RarityName}) {upgrade.EffectText}. " +
-                  $"Daño={attack?.AttackDamage} Dash={movement?.DashCooldown:F2}s HP={health?.CurrentHealth}/{health?.MaxHealth}");
+
+        // Cada nivel de vida también recupera esos HP
+        if (stat == StatType.Vida && health != null)
+            health.SetHealth(MaxHealth(), health.CurrentHealth + BuildCatalog.HealthPerLevel);
+    }
+
+    /// <summary>Se llama al comprar una habilidad en la tienda.</summary>
+    public void OnSkillBought(SkillType skill)
+    {
+        ApplyStats();
+        if (skill == SkillType.DashDoble && movement != null) movement.RefillDashCharges();
     }
 
     /// <summary>Guarda la vida actual para la siguiente arena.</summary>

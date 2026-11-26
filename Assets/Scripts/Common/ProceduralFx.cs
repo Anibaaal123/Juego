@@ -30,7 +30,8 @@ public static class ProceduralFx
         go.AddComponent<FadeAndDestroy>();
     }
 
-    private static Sprite GetSlashSprite()
+    /// <summary>Medialuna reutilizable (la usan los cortes y la onda de espada).</summary>
+    public static Sprite GetSlashSprite()
     {
         if (slashSprite != null) return slashSprite;
 

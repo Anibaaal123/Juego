@@ -24,8 +24,13 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private PlayerAttack playerAttack;
     [SerializeField] private Rigidbody2D rb;
 
+    [Header("Habilidad: Segundo aliento")]
+    [SerializeField] private float secondWindInvulnerability = 1.5f;
+
     private int currentHealth;
     private bool isDead = false;
+    private float invulnerableUntil = -1f;
+    private PlayerParry parry;
 
     [HideInInspector] public bool isInvulnerable = false;
 
@@ -38,6 +43,14 @@ public class PlayerHealth : MonoBehaviour
     {
         maxHealth = Mathf.Max(1, newMax);
         currentHealth = Mathf.Clamp(newCurrent, 0, maxHealth);
+        UpdateHealthUI();
+    }
+
+    /// <summary>Recupera vida sin pasar del máximo.</summary>
+    public void Heal(int amount)
+    {
+        if (isDead || amount <= 0) return;
+        currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
         UpdateHealthUI();
     }
 
@@ -65,9 +78,18 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if (isDead || isInvulnerable) return;
+        if (isDead || isInvulnerable || Time.time < invulnerableUntil) return;
+
+        // Habilidad Parry: si la ventana está abierta, el golpe se anula
+        if (parry == null) parry = GetComponent<PlayerParry>();
+        if (parry != null && parry.TryAbsorb()) return;
 
         currentHealth = Mathf.Max(0, currentHealth - damage);
+        CombatStats.RegisterHit(damage);
+
+        // Habilidad Segundo aliento: una vez por partida, en vez de morir se revive con parte de la vida
+        if (currentHealth <= 0 && TryUseSecondWind()) return;
+
         UpdateHealthUI();
         GameFeel.Shake(0.2f, 0.15f);
 
@@ -85,6 +107,35 @@ public class PlayerHealth : MonoBehaviour
         {
             Die();
         }
+    }
+
+    private bool TryUseSecondWind()
+    {
+        if (!RunState.Has(SkillType.SegundoAliento) || RunState.SecondWindUsed) return false;
+
+        RunState.SecondWindUsed = true;
+        currentHealth = Mathf.Max(1, Mathf.CeilToInt(maxHealth * BuildCatalog.SecondWindHealthFraction));
+        UpdateHealthUI();
+        StartCoroutine(SecondWindRoutine());
+        return true;
+    }
+
+    private IEnumerator SecondWindRoutine()
+    {
+        invulnerableUntil = Time.time + secondWindInvulnerability;
+        GameFeel.Shake(0.5f, 0.3f);
+        GameFeel.HitStop(0.1f);
+        GameFeel.FloatingText(transform.position + new Vector3(0f, 2.8f, 0f), "¡SEGUNDO ALIENTO!", new Color(1f, 0.85f, 0.3f), 1.5f);
+
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        float t = 0f;
+        while (t < secondWindInvulnerability)
+        {
+            if (sr != null) sr.color = Mathf.Repeat(t * 10f, 1f) < 0.5f ? new Color(1f, 1f, 0.6f, 0.6f) : Color.white;
+            t += Time.deltaTime;
+            yield return null;
+        }
+        if (sr != null) sr.color = Color.white;
     }
 
     private void UpdateHealthUI()
@@ -136,6 +187,7 @@ public class PlayerHealth : MonoBehaviour
     /// </summary>
     public void RestartScene()
     {
+        Time.timeScale = 1f; // por si se reinicia con un panel (que pausa el juego) abierto
         RunState.Reset();
         SceneManager.LoadScene(GameScenes.FirstArena);
     }

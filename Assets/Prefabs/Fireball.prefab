@@ -131,3 +131,6 @@ MonoBehaviour:
   solidLayers:
     serializedVersion: 2
     m_Bits: 65
+  reflectedDamage: 25
+  reflectedSpeedMultiplier: 1.4
+  reflectedColor: {r: 0.5, g: 0.95, b: 1, a: 1}
