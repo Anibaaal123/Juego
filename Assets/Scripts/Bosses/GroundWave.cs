@@ -53,7 +53,7 @@ public class GroundWave : MonoBehaviour
             PlayerHealth player = hit.GetComponentInParent<PlayerHealth>();
             if (player == null) continue;
 
-            player.TakeDamage(damage);
+            player.TakeDamage(damage, false, ranged: true);
             Destroy(gameObject);
             return;
         }

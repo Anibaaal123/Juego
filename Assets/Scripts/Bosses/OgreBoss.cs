@@ -75,9 +75,6 @@ public class OgreBoss : MonoBehaviour, IStunnable
     [SerializeField] private float roarPushSpeed = 14f;
     [SerializeField] private Color enragedTint = new Color(1f, 0.75f, 0.7f, 1f);
 
-    [Header("Daño por contacto")]
-    [SerializeField] private int contactDamage = 12;
-    [SerializeField] private float contactDamageCooldown = 0.8f;
 
     [Header("Referencias")]
     [SerializeField] private Animator animator;
@@ -103,7 +100,6 @@ public class OgreBoss : MonoBehaviour, IStunnable
     private float groundY;
     private float nextAttackTime;
     private float nextDevastatingTime;
-    private float nextContactTime;
     private Attack lastAttack = Attack.None;
     private string currentAnim = "";
     private readonly List<GameObject> markers = new List<GameObject>();
@@ -153,7 +149,6 @@ public class OgreBoss : MonoBehaviour, IStunnable
     {
         if (player == null || health.IsDead) return;
 
-        HandleContactDamage();
         if (busy) return;
 
         FaceTarget();
@@ -505,23 +500,6 @@ public class OgreBoss : MonoBehaviour, IStunnable
         foreach (GameObject go in markers)
             if (go != null) Destroy(go);
         markers.Clear();
-    }
-
-    private void HandleContactDamage()
-    {
-        if (Time.time < nextContactTime || body == null) return;
-
-        Bounds b = body.bounds;
-        foreach (Collider2D hit in Physics2D.OverlapBoxAll(b.center, b.size, 0f))
-        {
-            PlayerHealth ph = hit.GetComponentInParent<PlayerHealth>();
-            if (ph != null)
-            {
-                ph.TakeDamage(contactDamage);
-                nextContactTime = Time.time + contactDamageCooldown;
-                return;
-            }
-        }
     }
 
     private string Anim(string baseName) => phase2 ? baseName + "Unarmed" : baseName;

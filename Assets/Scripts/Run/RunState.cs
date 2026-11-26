@@ -30,7 +30,8 @@ public static class RunState
 
     public static int StatLevel(StatType stat) => statLevels[(int)stat];
 
-    public static bool Has(SkillType skill) => skills.Contains(skill);
+    /// <summary>El Parry viene incluido desde el inicio; el resto de las habilidades se compran en la tienda.</summary>
+    public static bool Has(SkillType skill) => skill == SkillType.Parry || skills.Contains(skill);
 
     /// <summary>Costo de subir el atributo al siguiente nivel, o -1 si ya está al máximo.</summary>
     public static int NextStatCost(StatType stat)

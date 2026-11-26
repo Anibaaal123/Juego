@@ -25,10 +25,10 @@ Cada jefe tiene ataques que **avisan antes de golpear**. Aprende su ritmo, esqui
 
 ## Lo que hace único a Colossus
 
-- 🔍 **Jefes que se leen, no que se adivinan.** El demonio marca el suelo en rojo antes de lanzarse o de soltar su lluvia de fuego; el Centinela destella antes de disparar. Todo ataque se puede anticipar.
+- 🔍 **Jefes que se leen, no que se adivinan.** El demonio marca el suelo en rojo antes de lanzarse o de soltar su lluvia de fuego; el Centinela destella antes de disparar y marca el suelo antes de golpear. Todo ataque se puede anticipar.
 - 🏆 **Tu rendimiento es tu poder.** Cada combate termina con una nota **S, A, B o C**. Una S te da el triple de puntos que una C.
-- 🧬 **Tu build, tu partida.** Gasta los puntos en cuatro atributos y en **seis habilidades** (parry, combo de tres golpes, onda de espada, dash doble, vampirismo y segundo aliento). La tienda ofrece **tres habilidades al azar** en cada visita: no hay dos partidas iguales.
-- 🛡️ **Defensa con riesgo y recompensa.** Cúbrete y recibe solo una parte del daño, o arriésgate a un **parry perfecto** (ventana de 0.10 s): anula el golpe, aturde al jefe y le devuelve sus bolas de fuego.
+- 🧬 **Tu build, tu partida.** Gasta los puntos en cuatro atributos y en **cinco habilidades** (combo de tres golpes, onda de espada, dash doble, vampirismo y segundo aliento); el **parry** lo tienes desde el principio. La tienda ofrece **tres habilidades al azar** en cada visita: no hay dos partidas iguales.
+- 🛡️ **Defensa con riesgo y recompensa.** Cúbrete y recibe solo una parte del daño, o arriésgate a un **parry perfecto** (ventana de solo 0.07 s): anula el golpe y aturde al jefe; si era un proyectil, se lo devuelve; contra un ataque a distancia (proyectiles, ondas y aliento de fuego) no hay aturdimiento.
 - 💥 **Cada golpe se siente.** Congelamiento al impactar, sacudida de cámara, números de daño y retroceso del jefe.
 - 🔥 **Arenas con carácter.** Columnas de fuego en la primera arena y géiseres que escupen llamas hacia el cielo en la segunda (el jefe es inmune; tú no).
 
@@ -52,7 +52,7 @@ Cada jefe tiene ataques que **avisan antes de golpear**. Aprende su ritmo, esqui
 
 <table>
 <tr>
-<td width="50%"><img src="Docs/escudo.png" alt="Cubrirse con el escudo"><br><sub><b>Cúbrete</b> y recibe solo el 30 % del daño. Con la habilidad Parry, un toque en el momento justo lo anula por completo.</sub></td>
+<td width="50%"><img src="Docs/escudo.png" alt="Cubrirse con el escudo"><br><sub><b>Cúbrete</b> y recibe solo el 30 % del daño. Con el parry, un toque en el momento justo lo anula por completo.</sub></td>
 <td width="50%"><img src="Docs/onda.png" alt="Onda de espada"><br><sub>Con la <b>onda de espada</b>, el golpe cargado lanza un corte que cruza la arena.</sub></td>
 </tr>
 </table>
@@ -78,10 +78,10 @@ Un coloso alado que domina el aire. Elige sus ataques al azar según la distanci
 - **Fase 2 al 50 % de vida:** ruge, te empuja con una onda expansiva y se enfurece: más rápido, más ataques seguidos y más columnas de fuego.
 
 ### 2. El Centinela — 220 HP · *jugable*
-Un guardián del fuego que no quiere que te acerques. Se mantiene a distancia y dispara bolas de fuego apuntadas y, cada tres ataques, un abanico de tres. Si lo presionas demasiado se transforma en un **pilar de fuego** y reaparece lejos. Mientras tanto, el suelo de su arena se abre en géiseres de fuego.
+Un guardián del fuego que no quiere que te acerques. Se mantiene a distancia y dispara bolas de fuego apuntadas y, cada tres ataques, un abanico de tres. Alterna además un **fuego rasante** (bolas por el suelo que hay que saltar) y una **embestida de fuego** que cruza la arena hacia ti. Si te acercas, te castiga con un **golpe de brasas** marcado en el suelo y, si insistes, se transforma en un **pilar de fuego** y reaparece lejos. Mientras tanto, el suelo de su arena se abre en géiseres de fuego.
 
 ### 3. El Guardián — 450 HP · *jugable*
-El jefe final: un ogro enorme en una **arena estrecha** cuyos bordes se encienden cada cierto tiempo y te arrinconan hacia el centro. No es rápido, pero cada golpe duele:
+El jefe final: un ogro enorme en una **arena abierta entre dos columnas de piedra**, sin trampas: solo tú y él. No es rápido, pero cada golpe duele:
 - **Garrotazo:** levanta el garrote, marca el suelo y golpea hacia adelante.
 - **Salto aplastante:** salta sobre ti y, al caer, lanza **ondas por el suelo** hacia ambos lados. Hay que saltarlas.
 - **Golpe devastador:** carga durante 1.5 s con un rugido y te quita **el 50 % de tu vida máxima**. Cubrirte lo baja al 15 %; un parry bien hecho lo anula y lo aturde.
@@ -110,11 +110,12 @@ Empiezas la partida con 2 puntos (solo alcanzan para atributos). Después de cad
 
 **Atributos** (5 niveles cada uno): **Vida** +15 HP · **Daño** +10 % · **Dash** −10 % de espera · **Carga** golpe cargado más rápido.
 
+**Parry:** lo tienes desde el inicio y no se compra. Clic derecho justo antes de un golpe (ventana de 0.07 s): lo anulas y aturdes al jefe. Contra ataques a distancia no aturde: las bolas de fuego se devuelven y las ondas y el aliento de fuego se anulan.
+
 **Habilidades** (se compran una vez; la tienda ofrece 3 al azar):
 
 | Habilidad | Costo | Qué hace |
 |---|---|---|
-| 🛡️ **Parry** | 4 | Clic derecho justo antes de un golpe: lo anulas, aturdes al jefe y devuelves sus bolas de fuego |
 | ⚔️ **Combo de 3 golpes** | 3 | El tercer golpe seguido hace ×1.8 de daño y empuja al jefe |
 | 🌙 **Onda de espada** | 3 | El golpe cargado lanza un corte a distancia |
 | 💨 **Dash doble** | 3 | Dos esquivas seguidas |
@@ -133,8 +134,9 @@ Empiezas la partida con 2 puntos (solo alcanzan para atributos). Después de cad
 | Golpe cargado | Mantener clic izquierdo 0.6 s y soltar |
 | Esquiva (dash) | Shift izquierdo |
 | Cubrirse | Mantener clic derecho |
-| Parry (habilidad) | Clic derecho justo antes de un golpe |
+| Parry | Clic derecho justo antes de un golpe |
 | Reiniciar partida | R |
+| Saltar de arena (solo pruebas) | F1 / F2 / F3 |
 | Volver al menú | Esc |
 
 ![Menú principal de Colossus](Docs/menu.png)
@@ -145,8 +147,9 @@ Empiezas la partida con 2 puntos (solo alcanzan para atributos). Después de cad
 
 **Ya funciona**
 - ✅ Tres jefes completos, cada uno con su arena, sus ataques y su comportamiento.
-- ✅ Resumen de rendimiento, notas S/A/B/C, tienda de puntos y seis habilidades.
+- ✅ Resumen de rendimiento, notas S/A/B/C, tienda de puntos y cinco habilidades, más el parry de inicio.
 - ✅ Defensa con cubrirse y parry, salto con peso, dash con cargas.
+- ✅ Sin daño por tocar a los jefes: solo sus ataques hacen daño.
 - ✅ Menú principal, puerta entre arenas y reinicio de partida.
 
 **En camino**
@@ -269,11 +272,12 @@ Se abre antes del primer jefe (con **2 puntos iniciales**, que solo alcanzan par
 | Dash | -10 % de espera del dash |
 | Carga | -0.08 s para cargar el golpe cargado |
 
+**Parry** (siempre disponible, no se compra): al apretar clic derecho se abre una ventana de 0.07 s: el golpe cuerpo a cuerpo se anula por completo y el jefe queda aturdido 1.5 s; las bolas de fuego rebotan hacia él (25 de daño), las ondas del Guardián y el aliento del Demonio se anulan, pero ninguno lo aturde. Si falla, hay 0.7 s de espera; si acierta, no.
+
 **Habilidades** (se compran una vez; en cada tienda se ofrecen 3 al azar entre las que aún no se tienen):
 
 | Habilidad | Costo | Efecto |
 |---|---|---|
-| Parry | 4 | Al apretar clic derecho se abre una ventana de 0.10 s: el golpe recibido se anula por completo, el jefe queda aturdido 0.8 s y las bolas de fuego rebotan hacia él (25 de daño). Si falla, hay 0.7 s de espera; si acierta, no |
 | Combo de 3 golpes | 3 | Clics seguidos (menos de 0.55 s entre uno y otro) encadenan 3 golpes; el tercero hace ×1.8 de daño y empuja al jefe |
 | Onda de espada | 3 | El golpe cargado lanza además una onda de corte a distancia (×1.5 del daño base) |
 | Dash doble | 3 | El dash tiene 2 cargas; cada una se recupera tras la espera del dash |
@@ -299,15 +303,22 @@ Elige sus ataques al azar según la distancia, sin repetir el mismo dos veces se
 ### Jefe 2 — El Centinela (rango, 220 HP)
 - Se desplaza a **4.0 u/s** manteniendo entre 7 y 12 u de distancia del jugador.
 - **Bola de fuego** apuntada (15 HP) y, cada 3er ataque, **abanico** de 3 proyectiles (12 HP c/u).
-- **Pilar de fuego** si el jugador se acerca a menos de 3 u: se vuelve un pilar invulnerable (30 HP) y reaparece lejos.
+- **Fuego rasante:** 2 bolas por el suelo, con 0.55 s entre una y otra (15 HP c/u). Se esquivan saltando.
+- **Embestida de fuego:** avisa 0.7 s, se convierte en una columna que cruza la arena a 17 u/s hacia el jugador (20 HP). Solo la usa si el jugador está a 6 u o más.
+- **Golpe de brasas:** si el jugador está a menos de 4.2 u, marca una zona en el suelo 0.75 s, da un salto corto hacia adelante y golpea (20 HP).
+- **Pilar de fuego** si el jugador se acerca a menos de 3 u: se vuelve un pilar invulnerable (30 HP) y reaparece lejos. La columna se achata a la mitad de alto para que lo visible coincida con su hitbox (3.8 × 6.5 u), de modo que se puede saltar.
+- Entre ataques a distancia elige uno al azar sin repetir el anterior.
 
-Ambos jefes pueden quedar aturdidos por un parry exitoso, salvo mientras rugen o son un pilar de fuego.
+**Tocar a un jefe no hace daño** (ninguno tiene daño por contacto): solo lo hacen sus ataques.
+
+Los jefes pueden quedar aturdidos por un parry exitoso contra un golpe cuerpo a cuerpo (1.5 s), salvo mientras rugen o son un pilar de fuego. Contra ataques a distancia (proyectiles, ondas, aliento de fuego) el parry anula el daño, y a los proyectiles los devuelve, pero no aturde.
 
 ### Ambientes
+- **Tamaño:** las arenas 1 y 2 miden 52 u de ancho (antes 64) con la cámara más cerca; la Arena 3 mide 40 u.
 - **Terreno (arenas 1 y 2):** plataformas como islas de roca con pasto y calaveras, y un suelo de pasto sobre adoquines morados. Los colliders no cambian: es solo aspecto.
 - **Arena 1:** columnas laterales de fuego que dañan de forma periódica.
 - **Arena 2 — Géiseres de fuego:** 4 grietas en el suelo; en cada ciclo 2 al azar parpadean 1.0 s (brotan llamas bajas que avisan) y luego lanzan una columna de fuego hacia arriba durante 2.0 s (unos 8 u de alto), que daña **15 HP cada 0.5 s** a quien esté dentro. El jefe es inmune a este fuego. (En el GDD era un piso eléctrico que además ralentizaba; se cambió a fuego para que encaje con el jefe.)
-- **Arena 3 — Arena estrecha:** 14 u de ancho entre dos columnas de piedra, con sombra a los costados. Cada 20 s se encienden los dos bordes: 1.0 s de aviso y 8 s de fuego (15 HP por segundo) que te empuja al centro, donde está el jefe. (En el GDD los bordes eran eléctricos; igual que en la Arena 2 se usó fuego.)
+- **Arena 3 — Arena entre columnas:** 40 u de ancho entre dos columnas de piedra, con sombra a los costados y sin plataformas ni trampas: el duelo es solo contra El Guardián.
 
 ### Interfaz, sonido y game feel
 - Barras de vida del jugador y del jefe, mensajes en pantalla, resumen de combate, tienda de mejoras e indicador de habilidades.
@@ -318,7 +329,7 @@ Ambos jefes pueden quedar aturdidos por un parry exitoso, salvo mientras rugen o
 
 ## 2. Requerimientos fuera de alcance (por ahora)
 
-- **Arena 3 que se reduce:** hoy es estrecha de entrada y sus bordes se encienden por turnos; el GDD pedía que el espacio se fuera reduciendo con el tiempo.
+- **Arena 3 con bordes peligrosos que se reducen:** el GDD pedía bordes eléctricos y un espacio que se achicara con el tiempo; se probó con fuego en los bordes y se quitó para que el duelo fuera limpio.
 - **Estamina, endlag y ventanas exactas de i-frames del GDD:** el jugador aún usa valores del prototipo (10 de daño, 3 s de espera del dash).
 - **Puntaje global del GDD** (+1000 por jefe, rangos S/A/B/C sobre el total de la partida): hoy la nota se calcula por jefe y sirve para repartir puntos de mejora. `ScoreManager` sigue en la escena sin usarse.
 - **Pausa manual, pantalla final con estadísticas de toda la partida y guardado de récords (`SaveData.json`).**
@@ -331,13 +342,13 @@ Ambos jefes pueden quedar aturdidos por un parry exitoso, salvo mientras rugen o
 - **`PlayerMovement.cs`**: movimiento horizontal, salto con peso (gravedad alta, caída rápida y salto corto), dash con cargas (2 con Dash doble), ralentización y retroceso.
 - **`PlayerAttack.cs`**: golpe normal, cargado y remate del combo, con daño en área, empuje, cortes visibles, onda de espada, vampirismo y game feel.
 - **`PlayerHealth.cs`**: vida del jugador y su barra; aplica el cubrirse, el parry y el segundo aliento; al morir o presionar R reinicia la partida desde la Arena 1.
-- **`Scripts/Player/PlayerGuard.cs`**: defensa con el clic derecho: cubrirse (daño reducido y movimiento lento) y la habilidad Parry (ventana de 0.10 s, aturdimiento del jefe y espera si falla).
+- **`Scripts/Player/PlayerGuard.cs`**: defensa con el clic derecho: cubrirse (daño reducido y movimiento lento) y el Parry (siempre disponible, ventana de 0.07 s, aturdimiento del jefe y espera si falla).
 - **`Scripts/Player/SwordWave.cs`**: onda de corte que lanza el golpe cargado con la habilidad Onda de espada.
 
 ### Jefes
 - **`EnemyHealth.cs`**: vida de cualquier jefe, barra, parpadeo al recibir daño, números de daño, retroceso y desvanecimiento al morir.
 - **`Scripts/Bosses/DemonBoss.cs`**: IA del Jefe 1 (aliento, picada, lluvia de fuego, fase 2 con rugido, elección aleatoria de ataques y aturdimiento).
-- **`Scripts/Bosses/CentinelaBoss.cs`**: IA del Jefe 2 (movimiento a distancia, bola de fuego, abanico y pilar de fuego con teletransporte).
+- **`Scripts/Bosses/CentinelaBoss.cs`**: IA del Jefe 2 (movimiento a distancia, bola de fuego, abanico, fuego rasante, embestida, golpe de brasas y pilar de fuego con teletransporte).
 - **`Scripts/Bosses/OgreBoss.cs`**: IA del Jefe 3 (garrotazo, salto aplastante, golpe devastador del 50 % de vida, embestida y fase 2 sin garrote).
 - **`Scripts/Bosses/GroundWave.cs`**: onda que recorre el suelo tras el salto del Guardián; se esquiva saltando.
 - **`Scripts/Bosses/BossProjectile.cs`**: proyectil enemigo en línea recta; con un parry exitoso rebota hacia el jefe.
@@ -350,6 +361,7 @@ Ambos jefes pueden quedar aturdidos por un parry exitoso, salvo mientras rugen o
 ### Boss Rush: puntos, tienda y build
 - **`Scripts/Run/BuildCatalog.cs`**: catálogo de atributos y habilidades con sus costos, valores y textos.
 - **`Scripts/Run/RunState.cs`**: estado de la partida entre escenas (puntos, niveles de atributos, habilidades, vida arrastrada).
+- **`Scripts/Run/DebugArenaJump.cs`**: atajo de pruebas: F1, F2 y F3 saltan a la Arena 1, 2 o 3 (a la 2 y 3 con una build de ejemplo). Se borra antes de publicar.
 - **`Scripts/Run/CombatStats.cs`**: mide tiempo, golpes recibidos, precisión y parries del combate actual.
 - **`Scripts/Run/PerformanceReport.cs`**: calcula el puntaje, la nota (S/A/B/C) y los puntos de mejora de un combate.
 - **`Scripts/Run/PlayerRunStats.cs`**: aplica al jugador su build al entrar a cada arena y al comprar mejoras.
@@ -368,8 +380,9 @@ Ambos jefes pueden quedar aturdidos por un parry exitoso, salvo mientras rugen o
 - **`Scripts/Common/GameFeel.cs`**: hitstop, sacudida de cámara, números de daño y textos flotantes.
 - **`Scripts/Common/ProceduralFx.cs`**: corte visual y rugido sintetizado, generados por código.
 - **`Scripts/Common/SimpleSpriteAnimation.cs`**, **`FadeAndDestroy.cs`**, **`WarningPulse.cs`**: animación por cuadros, desvanecido de efectos y parpadeo de advertencias.
+- **`Editor/ArenaBuilder.Resize.cs`**: tamaño de las arenas 1 y 2 (paredes, plataformas, calaveras y cámara).
 - **`Editor/ArenaBuilder.cs`**: menú *Colossus → Construir Boss Rush* que configura la Arena 1, aplica el arte del terreno (plataformas y suelo), genera las arenas 2 y 3 (conservando sus GUID) y ordena las escenas en Build Settings.
-- **`Editor/ArenaBuilder.Arena3.cs`**: construye la Arena 3 (arena estrecha, columnas, sombra, El Guardián y bordes de fuego).
+- **`Editor/ArenaBuilder.Arena3.cs`**: construye la Arena 3 (arena abierta entre columnas, sombra y El Guardián).
 - **`Editor/MenuBuilder.cs`**: menú *Colossus → Construir Menú Principal* que genera la escena del menú.
 
 ### Heredados del prototipo (sin uso en las escenas actuales)

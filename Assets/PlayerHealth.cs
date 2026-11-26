@@ -78,9 +78,9 @@ public class PlayerHealth : MonoBehaviour
 
     /// <summary>
     /// Aplica daño al jugador. Los golpes de los enemigos se pueden cubrir (daño reducido) o parar con la habilidad
-    /// Parry (daño anulado); el fuego del piso y otros peligros del escenario usan unblockable = true.
+    /// Parry (daño anulado; si es un ataque a distancia, ranged = true, no aturde al jefe); el fuego del piso y otros peligros usan unblockable = true.
     /// </summary>
-    public void TakeDamage(int damage, bool unblockable = false)
+    public void TakeDamage(int damage, bool unblockable = false, bool ranged = false)
     {
         if (isDead || isInvulnerable || Time.time < invulnerableUntil) return;
 
@@ -89,7 +89,7 @@ public class PlayerHealth : MonoBehaviour
             if (guard == null) guard = GetComponent<PlayerGuard>();
             if (guard != null)
             {
-                if (guard.TryAbsorb()) return;                          // Parry: el golpe se anula por completo
+                if (guard.TryAbsorb(ranged)) return;                        // Parry: el golpe se anula por completo
                 if (guard.IsGuarding) damage = guard.Block(damage);     // Cubierto: se recibe solo una parte
             }
         }

@@ -29,7 +29,7 @@ public static class BuildCatalog
 
     public static readonly SkillType[] AllSkills =
     {
-        SkillType.Parry, SkillType.Combo, SkillType.OndaEspada,
+        SkillType.Combo, SkillType.OndaEspada,
         SkillType.DashDoble, SkillType.Vampirismo, SkillType.SegundoAliento,
     };
 
@@ -73,7 +73,7 @@ public static class BuildCatalog
         switch (skill)
         {
             case SkillType.Parry:
-                return "Al apretar clic derecho justo antes de un golpe (ventana de 0.10 s) lo anulas por completo, aturdes al jefe 0.8 s y devuelves sus bolas de fuego.";
+                return "Al apretar clic derecho justo antes de un golpe (ventana de 0.07 s) lo anulas por completo y aturdes al jefe 1.5 s. Contra ataques a distancia no aturde: las bolas de fuego se devuelven y ondas y aliento se anulan.";
             case SkillType.Combo:
                 return "Clics seguidos encadenan 3 golpes. El tercero hace ×1.8 de daño y empuja al jefe.";
             case SkillType.OndaEspada:

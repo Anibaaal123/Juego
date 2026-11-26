@@ -72,9 +72,6 @@ public class DemonBoss : MonoBehaviour, IStunnable
     [SerializeField] private float roarPushSpeed = 14f;
     [SerializeField] private Color enragedTint = new Color(1f, 0.7f, 0.7f, 1f);
 
-    [Header("Daño por contacto")]
-    [SerializeField] private int contactDamage = 5;
-    [SerializeField] private float contactDamageCooldown = 1.5f;
 
     [Header("Referencias")]
     [SerializeField] private BossProjectile projectilePrefab;
@@ -95,7 +92,6 @@ public class DemonBoss : MonoBehaviour, IStunnable
     private bool busy;
     private bool phase2;
     private float nextAttackTime;
-    private float nextContactDamageTime;
     private Attack lastAttack = Attack.None;
     private float groundY = -2.5f;
 
@@ -204,7 +200,7 @@ public class DemonBoss : MonoBehaviour, IStunnable
             if (hit != null && !hasDamaged)
             {
                 PlayerHealth ph = hit.GetComponentInParent<PlayerHealth>();
-                if (ph != null) { ph.TakeDamage(attackDamage); hasDamaged = true; }
+                if (ph != null) { ph.TakeDamage(attackDamage, false, ranged: true); hasDamaged = true; }
             }
             timer += Time.deltaTime;
             yield return null;
@@ -504,17 +500,6 @@ public class DemonBoss : MonoBehaviour, IStunnable
     {
         arenaMinX = minX;
         arenaMaxX = maxX;
-    }
-
-    private void OnTriggerStay2D(Collider2D collision)
-    {
-        if (Time.time < nextContactDamageTime || health.IsDead) return;
-        PlayerHealth ph = collision.GetComponent<PlayerHealth>();
-        if (ph != null)
-        {
-            ph.TakeDamage(contactDamage);
-            nextContactDamageTime = Time.time + contactDamageCooldown;
-        }
     }
 
     private void OnDrawGizmosSelected()

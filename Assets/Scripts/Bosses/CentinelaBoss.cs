@@ -3,11 +3,15 @@ using UnityEngine;
 
 /// <summary>
 /// Jefe 2 — El Centinela (jefe de rango).
-/// Mantiene distancia con el jugador desplazándose por el suelo a 4.0 u/s y alterna tres ataques:
+/// Mantiene distancia con el jugador desplazándose por el suelo a 4.0 u/s y alterna sus ataques:
 ///   1. Bola de fuego: telegrafía 0.45 s y dispara 1 proyectil apuntado (15 HP).
 ///   2. Abanico: cada 3er ataque a distancia, telegrafía 0.75 s y dispara 3 proyectiles (12 HP c/u).
-///   3. Pilar de fuego: si el jugador se acerca a menos de 3.0 u, telegrafía 0.6 s, se convierte en
+///   3. Fuego rasante: dos bolas rasantes por el suelo, hay que saltarlas (15 HP c/u).
+///   4. Embestida de fuego: se convierte en una columna que cruza la arena hacia el jugador (20 HP).
+///   5. Golpe de brasas: si el jugador está cerca y el pilar no está listo, un golpe cuerpo a cuerpo (20 HP).
+///   6. Pilar de fuego: si el jugador se acerca a menos de 3.0 u, telegrafía 0.6 s, se convierte en
 ///      un pilar de fuego de 1.0 s (30 HP) y reaparece lejos del jugador. Es invulnerable mientras arde.
+/// Tocar al jefe NO hace daño: solo sus ataques. Todos los valores son editables en el Inspector.
 /// Todos los valores son editables en el Inspector.
 /// </summary>
 [RequireComponent(typeof(EnemyHealth))]
@@ -44,17 +48,39 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
     [SerializeField] private float pillarTelegraph = 0.6f;
     [SerializeField] private float pillarDuration = 1.0f;
     [SerializeField] private int pillarDamage = 30;
-    [SerializeField] private Vector2 pillarHitboxSize = new Vector2(4.5f, 14f);
+    [SerializeField] private Vector2 pillarHitboxSize = new Vector2(3.8f, 6.5f);
     [SerializeField] private float pillarCooldown = 5.0f;
     [Tooltip("Distancia a la que reaparece respecto del jugador")]
     [SerializeField] private float teleportDistance = 11f;
     [SerializeField] private float emergeDuration = 0.4f;
 
-    [Header("Daño por contacto")]
-    [SerializeField] private int contactDamage = 15;
-    [SerializeField] private float contactDamageCooldown = 0.8f;
-    [SerializeField] private Vector2 contactBoxSize = new Vector2(2.4f, 4.5f);
-    [SerializeField] private Vector2 contactBoxOffset = new Vector2(0f, 2.4f);
+    [Header("Ataque 4 — Fuego rasante (se esquiva saltando)")]
+    [SerializeField] private float lowShotTelegraph = 0.5f;
+    [SerializeField] private float lowShotSpeed = 10f;
+    [SerializeField] private int lowShotDamage = 15;
+    [SerializeField] private int lowShotCount = 2;
+    [SerializeField] private float lowShotGap = 0.55f;
+
+    [Header("Ataque 5 — Embestida de fuego")]
+    [SerializeField] private float rushTelegraph = 0.7f;
+    [SerializeField] private float rushSpeed = 17f;
+    [SerializeField] private int rushDamage = 20;
+    [SerializeField] private float rushOvershoot = 7f;
+    [SerializeField] private float rushMinDistance = 6f;
+    [SerializeField] private Vector2 rushHitboxSize = new Vector2(3.4f, 5.5f);
+
+    [Header("Ataque 6 — Golpe de brasas (cuerpo a cuerpo)")]
+    [SerializeField] private float strikeTriggerDistance = 4.2f;
+    [SerializeField] private float strikeTelegraph = 0.75f;
+    [SerializeField] private int strikeDamage = 20;
+    [SerializeField] private float strikeCooldown = 2.0f;
+    [SerializeField] private Vector2 strikeBoxSize = new Vector2(4.6f, 4.5f);
+    [SerializeField] private float strikeBoxForward = 2.3f;
+
+    [Header("Aspecto de la columna de fuego")]
+    [Tooltip("El sprite del pilar mide casi 15 u; se achata para que lo visible coincida con la hitbox")]
+    [SerializeField] private float columnHeightFactor = 0.5f;
+    [SerializeField] private Color strikeMarkerColor = new Color(1f, 0.25f, 0.1f, 0.8f);
 
     [Header("Referencias")]
     [SerializeField] private BossProjectile projectilePrefab;
@@ -81,13 +107,18 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
     private Rigidbody2D rb;
     private float nextRangedTime;
     private float nextPillarTime;
-    private float nextContactTime;
+    private float nextStrikeTime;
+    private Vector3 baseScale;
+    private static Sprite whiteSprite;
+    private float groundPlayerY;
+    private int lastRanged = -1;
     private int rangedAttackCount;
     private bool facingRight;
 
     private void Awake()
     {
         health = GetComponent<EnemyHealth>();
+        baseScale = transform.localScale;
         rb = GetComponent<Rigidbody2D>();
         if (animator == null) animator = GetComponent<Animator>();
         if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
@@ -100,6 +131,7 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
         {
             state = State.Dead;
             StopAllCoroutines();
+            SetColumnLook(false);
             // Las bolas de fuego que quedaban en el aire desaparecen con el jefe
             foreach (BossProjectile p in FindObjectsByType<BossProjectile>()) Destroy(p.gameObject);
         };
@@ -109,14 +141,13 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
     {
         // Pequeño respiro al empezar la pelea
         nextRangedTime = Time.time + 1.5f;
+        if (player != null) groundPlayerY = player.position.y;
         PlayAnim(AnimIdle);
     }
 
     private void Update()
     {
         if (state == State.Dead || player == null) return;
-
-        HandleContactDamage();
 
         if (state == State.Attacking) return;
 
@@ -130,10 +161,16 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
             return;
         }
 
+        // Golpe cuerpo a cuerpo cuando el pilar aún no está listo
+        if (distance <= strikeTriggerDistance && Time.time >= nextStrikeTime)
+        {
+            StartCoroutine(StrikeRoutine());
+            return;
+        }
+
         if (Time.time >= nextRangedTime)
         {
-            bool volley = volleyEveryNAttacks > 0 && (rangedAttackCount + 1) % volleyEveryNAttacks == 0;
-            StartCoroutine(volley ? VolleyRoutine() : FireballRoutine());
+            StartCoroutine(ChooseRangedAttack(distance));
             return;
         }
 
@@ -151,6 +188,198 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
     }
 
     // ---------------- Ataques ----------------
+
+    /// <summary>Elige el siguiente ataque a distancia: abanico cada N, y si no uno al azar distinto del anterior.</summary>
+    private IEnumerator ChooseRangedAttack(float distance)
+    {
+        bool volley = volleyEveryNAttacks > 0 && (rangedAttackCount + 1) % volleyEveryNAttacks == 0;
+        if (volley)
+        {
+            lastRanged = 1;
+            yield return VolleyRoutine();
+            yield break;
+        }
+
+        // 0 = bola de fuego, 2 = fuego rasante, 3 = embestida (solo si hay espacio)
+        int pick;
+        int guard = 0;
+        do
+        {
+            pick = Random.Range(0, 3);
+            if (pick == 1) pick = 3;
+            guard++;
+        } while ((pick == lastRanged || (pick == 3 && distance < rushMinDistance)) && guard < 12);
+        lastRanged = pick;
+
+        if (pick == 2) yield return LowShotRoutine();
+        else if (pick == 3) yield return RushRoutine();
+        else yield return FireballRoutine();
+    }
+
+    private IEnumerator LowShotRoutine()
+    {
+        state = State.Attacking;
+        PlayAnim(AnimBreath);
+        yield return Telegraph(lowShotTelegraph);
+
+        for (int i = 0; i < lowShotCount; i++)
+        {
+            ShootLow();
+            if (i < lowShotCount - 1) yield return new WaitForSeconds(lowShotGap);
+        }
+        rangedAttackCount++;
+
+        yield return new WaitForSeconds(0.3f);
+        EndAttack(rangedCooldown + 0.2f);
+    }
+
+    private void ShootLow()
+    {
+        if (projectilePrefab == null) return;
+        Vector2 origin = new Vector2(MouthPosition().x, groundPlayerY - 0.3f);
+        float dir = player.position.x >= transform.position.x ? 1f : -1f;
+        BossProjectile p = Instantiate(projectilePrefab, origin, Quaternion.identity);
+        p.Launch(new Vector2(dir, 0f), lowShotSpeed, lowShotDamage);
+        PlaySound(fireballSound);
+    }
+
+    private IEnumerator RushRoutine()
+    {
+        state = State.Attacking;
+        PlayAnim(AnimBurnStart);
+        yield return Telegraph(rushTelegraph);
+
+        float dir = player.position.x >= transform.position.x ? 1f : -1f;
+        Face(dir);
+        float startX = transform.position.x;
+        float goalX = Mathf.Clamp(player.position.x + dir * rushOvershoot, arenaMinX, arenaMaxX);
+        float travel = Mathf.Abs(goalX - startX);
+
+        PlayAnim(AnimPillar);
+        SetColumnLook(true);
+        PlaySound(pillarSound);
+
+        bool damaged = false;
+        float moved = 0f;
+        while (moved < travel)
+        {
+            float step = Mathf.Min(rushSpeed * Time.deltaTime, travel - moved);
+            SetX(transform.position.x + dir * step);
+            moved += step;
+
+            if (!damaged)
+            {
+                Vector2 center = (Vector2)transform.position + new Vector2(0f, rushHitboxSize.y * 0.5f);
+                foreach (Collider2D hit in Physics2D.OverlapBoxAll(center, rushHitboxSize, 0f))
+                {
+                    PlayerHealth ph = hit.GetComponent<PlayerHealth>();
+                    if (ph != null) { ph.TakeDamage(rushDamage); damaged = true; break; }
+                }
+            }
+            yield return null;
+        }
+
+        SetColumnLook(false);
+        Face(player.position.x - transform.position.x);
+        PlayAnim(AnimEmerge);
+        yield return new WaitForSeconds(emergeDuration + 0.2f);
+        rangedAttackCount++;
+        EndAttack(rangedCooldown + 0.4f);
+    }
+
+    private IEnumerator StrikeRoutine()
+    {
+        state = State.Attacking;
+        nextStrikeTime = Time.time + strikeCooldown;
+        Face(player.position.x - transform.position.x);
+
+        float dir = facingRight ? 1f : -1f;
+        Vector2 center = (Vector2)transform.position + new Vector2(dir * strikeBoxForward, strikeBoxSize.y * 0.5f);
+
+        // Aviso: zona marcada en el suelo y el jefe abre la boca cargando el golpe
+        GameObject marker = SpawnStrikeMarker(center.x);
+        PlayAnim(AnimBreath);
+        yield return Telegraph(strikeTelegraph);
+        if (marker != null) Destroy(marker);
+
+        // Golpe: pequeño salto hacia adelante, destello y daño
+        PlaySound(pillarSound);
+        StartCoroutine(StrikeFlash(center, dir));
+        float lunge = 1.2f;
+        float t = 0f;
+        while (t < 0.1f)
+        {
+            float step = lunge * Time.deltaTime / 0.1f;
+            SetX(Mathf.Clamp(transform.position.x + dir * step, arenaMinX, arenaMaxX));
+            t += Time.deltaTime;
+            yield return null;
+        }
+        center = (Vector2)transform.position + new Vector2(dir * strikeBoxForward, strikeBoxSize.y * 0.5f);
+        foreach (Collider2D hit in Physics2D.OverlapBoxAll(center, strikeBoxSize, 0f))
+        {
+            PlayerHealth ph = hit.GetComponent<PlayerHealth>();
+            if (ph != null) { ph.TakeDamage(strikeDamage); break; }
+        }
+        GameFeel.Shake(0.2f, 0.2f);
+
+        yield return new WaitForSeconds(0.45f);
+        EndAttack(rangedCooldown * 0.5f);
+    }
+
+    private GameObject SpawnStrikeMarker(float centerX)
+    {
+        if (whiteSprite == null)
+        {
+            var tex = new Texture2D(4, 4);
+            var px = new Color[16];
+            for (int k = 0; k < px.Length; k++) px[k] = Color.white;
+            tex.SetPixels(px);
+            tex.Apply();
+            tex.filterMode = FilterMode.Point;
+            whiteSprite = Sprite.Create(tex, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4f);
+        }
+
+        var go = new GameObject("CentinelaWarning");
+        go.transform.position = new Vector3(centerX, transform.position.y + 0.35f, 0f);
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = whiteSprite;
+        sr.drawMode = SpriteDrawMode.Sliced;
+        sr.size = new Vector2(strikeBoxSize.x, 0.7f);
+        sr.color = strikeMarkerColor;
+        sr.sortingOrder = spriteRenderer.sortingOrder - 1;
+        go.AddComponent<WarningPulse>();
+        return go;
+    }
+
+    /// <summary>Destello de fuego que se desvanece donde cae el golpe.</summary>
+    private IEnumerator StrikeFlash(Vector2 center, float dir)
+    {
+        var go = new GameObject("CentinelaStrikeFlash");
+        go.transform.position = center;
+        go.transform.localScale = new Vector3(1.4f, 2.6f, 1f);
+        go.transform.rotation = Quaternion.Euler(0f, 0f, dir > 0f ? -90f : 90f);
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = ProceduralFx.GetSlashSprite();
+        sr.sortingOrder = spriteRenderer.sortingOrder + 1;
+
+        float t = 0f;
+        const float life = 0.25f;
+        while (t < life)
+        {
+            float k = t / life;
+            sr.color = new Color(1f, Mathf.Lerp(0.75f, 0.3f, k), 0.2f, 1f - k);
+            go.transform.localScale = new Vector3(1.4f + k * 0.8f, 2.6f + k * 0.6f, 1f);
+            t += Time.deltaTime;
+            yield return null;
+        }
+        Destroy(go);
+    }
+
+    /// <summary>Achata el sprite del pilar mientras dura la columna, para que lo que se ve sea lo que daña.</summary>
+    private void SetColumnLook(bool on)
+    {
+        transform.localScale = on ? new Vector3(baseScale.x, baseScale.y * columnHeightFactor, baseScale.z) : baseScale;
+    }
 
     private IEnumerator FireballRoutine()
     {
@@ -191,6 +420,7 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
         // Se transforma en pilar: invulnerable y daña una sola vez
         health.isInvulnerable = true;
         PlayAnim(AnimPillar);
+        SetColumnLook(true);
         PlaySound(pillarSound);
 
         bool damaged = false;
@@ -212,6 +442,7 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
 
         // Desaparece y reaparece lejos del jugador, en el lado con más espacio
         spriteRenderer.enabled = false;
+        SetColumnLook(false);
         float px = player.position.x;
         float roomLeft = px - arenaMinX;
         float roomRight = arenaMaxX - px;
@@ -279,6 +510,7 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
         if (state == State.Dead || health.IsDead || health.isInvulnerable) return;
 
         StopAllCoroutines();
+        SetColumnLook(false);
         state = State.Attacking; // bloquea la IA mientras dura el aturdimiento
         StartCoroutine(StunRoutine(duration));
     }
@@ -301,23 +533,6 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
     }
 
     // ---------------- Utilidades ----------------
-
-    private void HandleContactDamage()
-    {
-        if (Time.time < nextContactTime || !spriteRenderer.enabled) return;
-
-        Vector2 center = (Vector2)transform.position + contactBoxOffset;
-        foreach (Collider2D hit in Physics2D.OverlapBoxAll(center, contactBoxSize, 0f))
-        {
-            PlayerHealth ph = hit.GetComponent<PlayerHealth>();
-            if (ph != null)
-            {
-                ph.TakeDamage(contactDamage);
-                nextContactTime = Time.time + contactDamageCooldown;
-                return;
-            }
-        }
-    }
 
     private Vector2 MouthPosition()
     {
@@ -377,7 +592,7 @@ public class CentinelaBoss : MonoBehaviour, IStunnable
         Gizmos.color = new Color(1f, 0.4f, 0f);
         Gizmos.DrawWireCube(pos + new Vector3(0f, pillarHitboxSize.y * 0.5f, 0f), pillarHitboxSize);
         Gizmos.color = Color.magenta;
-        Gizmos.DrawWireCube(pos + (Vector3)contactBoxOffset, contactBoxSize);
+        Gizmos.DrawWireCube(pos + new Vector3(0f, strikeBoxSize.y * 0.5f, 0f), strikeBoxSize);
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(pos + (Vector3)mouthOffset, 0.25f);
     }

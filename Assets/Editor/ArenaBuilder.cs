@@ -96,6 +96,8 @@ public static partial class ArenaBuilder
     {
         var scene = EditorSceneManager.OpenScene(Arena1ScenePath, OpenSceneMode.Single);
 
+        ResizeClassicArena();
+
         // Las monedas daban daño extra fuera del sistema de mejoras: se quitan (las reemplaza la tienda de puntos)
         DestroyIfExists("Coin", "Coin (1)", "Coin (2)");
 

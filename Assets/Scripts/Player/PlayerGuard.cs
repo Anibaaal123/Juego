@@ -7,8 +7,8 @@ using UnityEngine;
 ///     daño (mínimo 1) y el jugador se mueve al 50 % de velocidad. No se puede cubrir en pleno ataque.
 ///     El fuego del piso y otros peligros del escenario no se pueden bloquear.
 ///
-///   • Parry (habilidad, ver RunState): al apretar se abre una ventana de 0.10 s en la que el golpe se anula por completo.
-///       - Éxito: sin daño, el jefe cercano queda aturdido 0.8 s y no hay espera para volver a usarlo.
+///   • Parry (siempre disponible): al apretar se abre una ventana de 0.07 s en la que el golpe se anula por completo.
+///       - Éxito: sin daño, el jefe cercano queda aturdido 1.5 s y no hay espera para volver a usarlo.
 ///       - Las bolas de fuego enemigas que lo tocan en la ventana rebotan hacia el jefe (ver BossProjectile).
 ///       - Fallo: 0.7 s de espera antes de poder abrir otra ventana (seguir cubierto no tiene espera).
 /// </summary>
@@ -23,12 +23,12 @@ public class PlayerGuard : MonoBehaviour
     [Tooltip("Depuración: mantiene la guardia activa sin apretar el clic derecho")]
     [SerializeField] private bool debugHoldGuard;
 
-    [Header("Parry (habilidad)")]
-    [Tooltip("Tiempo que dura la ventana del parry (6 cuadros a 60 FPS): hay que apretar justo antes del golpe")]
-    [SerializeField] private float window = 0.10f;
+    [Header("Parry (siempre disponible)")]
+    [Tooltip("Tiempo que dura la ventana del parry (unos 4 cuadros a 60 FPS): hay que apretar justo antes del golpe")]
+    [SerializeField] private float window = 0.07f;
     [Tooltip("Espera tras un parry fallido")]
     [SerializeField] private float missCooldown = 0.7f;
-    [SerializeField] private float stunDuration = 0.8f;
+    [SerializeField] private float stunDuration = 1.5f;
     [SerializeField] private float stunRange = 16f;
     [SerializeField] private Color parryColor = new Color(0.5f, 0.95f, 1f, 1f);
 
@@ -103,22 +103,22 @@ public class PlayerGuard : MonoBehaviour
     }
 
     /// <summary>PlayerHealth lo llama antes de aplicar daño. Devuelve true si el golpe quedó anulado por un parry.</summary>
-    public bool TryAbsorb()
+    public bool TryAbsorb(bool ranged = false)
     {
         if (!RunState.Has(SkillType.Parry) || !IsActive) return false;
-        Succeed();
+        Succeed(stunBoss: !ranged);
         return true;
     }
 
-    /// <summary>Los proyectiles lo llaman al tocar al jugador. Devuelve true si deben rebotar.</summary>
+    /// <summary>Los proyectiles lo llaman al tocar al jugador. Devuelve true si deben rebotar (sin aturdir al jefe).</summary>
     public bool TryReflect()
     {
         if (!RunState.Has(SkillType.Parry) || !IsActive) return false;
-        Succeed();
+        Succeed(stunBoss: false);
         return true;
     }
 
-    private void Succeed()
+    private void Succeed(bool stunBoss)
     {
         if (succeededThisWindow) return;
         succeededThisWindow = true;
@@ -135,7 +135,8 @@ public class PlayerGuard : MonoBehaviour
         ProceduralFx.Slash(center, 90f, 1.8f, new Color(1f, 1f, 1f, 0.95f), order);
         ProceduralFx.Slash(center, -90f, 1.8f, new Color(1f, 1f, 1f, 0.95f), order);
 
-        // Aturde al jefe cercano
+        // Un golpe cuerpo a cuerpo aturde al jefe cercano; devolver un proyectil no
+        if (!stunBoss) return;
         foreach (EnemyHealth enemy in FindObjectsByType<EnemyHealth>())
         {
             if (enemy.IsDead) continue;

@@ -7,9 +7,9 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Arena 3 — El Guardián. Se genera desde la Arena 1 (igual que la Arena 2), pero:
-///   • es estrecha (14 u de ancho): paredes más cerca, columnas de piedra en los límites y sombra fuera de la arena;
+///   • mide 40 u de ancho: paredes más cerca, columnas de piedra en los límites y sombra fuera de la arena;
 ///   • no tiene plataformas;
-///   • los dos bordes (2 u cada uno) se encienden con fuego durante 8 s cada 20 s (15 HP/s) y el jefe es inmune;
+///   • (sin bordes de fuego: se quitaron a pedido; BuildEdgeFire queda sin usar por si se quiere volver a ponerlos);
 ///   • la cámara se acerca para encuadrar la arena.
 /// </summary>
 public static partial class ArenaBuilder
@@ -22,7 +22,7 @@ public static partial class ArenaBuilder
 
     private const float OgreScale = 1.8f;
     /// <summary>Mitad del ancho de la arena (GDD: 14 u de ancho).</summary>
-    private const float ArenaHalfWidth = 7f;
+    private const float ArenaHalfWidth = 20f;
 
     private static void ConfigureArena3Sprites()
     {
@@ -82,7 +82,8 @@ public static partial class ArenaBuilder
         GameObject boss = BuildOgre(idle[0], controller, groundTop, baseOrder, bossSlider, deathSound, growlSound);
         EnemyHealth bossHealth = boss.GetComponent<EnemyHealth>();
 
-        BuildEdgeFire(groundTop, baseOrder - 1, baseOrder + 2, bossHealth, flames);
+        // Sin géiseres en los bordes: la arena es solo el combate contra El Guardián
+        // BuildEdgeFire(groundTop, baseOrder - 1, baseOrder + 2, bossHealth, flames);
 
         // Es la última arena: muestra el resumen y la victoria, sin tienda ni puerta
         SetupBossRushObjects(scene, bossHealth, nextScene: "", offerUpgrades: false, showStartShop: false,
@@ -94,8 +95,8 @@ public static partial class ArenaBuilder
 
     // ---------------- Arena estrecha ----------------
 
-    /// <summary>Acerca las paredes, pone columnas y sombra en los límites, acerca la cámara y reubica al jugador.</summary>
-    private static void NarrowArena(float groundTop, int baseOrder)
+    /// <summary>Deja las caras interiores de las paredes exactamente en ±half.</summary>
+    private static void PlaceWalls(float half)
     {
         foreach (string wallName in new[] { "Wall_Left", "Wall_Right" })
         {
@@ -106,9 +107,15 @@ public static partial class ArenaBuilder
             if (col == null) continue;
 
             float side = wallName == "Wall_Left" ? -1f : 1f;
-            // La cara interior de la pared queda exactamente en ±ArenaHalfWidth
-            wall.transform.position = new Vector3(side * (ArenaHalfWidth + col.size.x * 0.5f), wall.transform.position.y, 0f);
+            // La cara interior de la pared queda exactamente en ±half
+            wall.transform.position = new Vector3(side * (half + col.size.x * 0.5f), wall.transform.position.y, 0f);
         }
+    }
+
+    /// <summary>Acerca las paredes, pone columnas y sombra en los límites, acerca la cámara y reubica al jugador.</summary>
+    private static void NarrowArena(float groundTop, int baseOrder)
+    {
+        PlaceWalls(ArenaHalfWidth);
 
         Sprite pillar = AssetDatabase.LoadAssetAtPath<Sprite>(PillarSpritePath);
         Sprite black = AssetDatabase.LoadAssetAtPath<Sprite>(BlackSpritePath);
@@ -138,13 +145,13 @@ public static partial class ArenaBuilder
         Camera cam = Camera.main;
         if (cam != null)
         {
-            cam.orthographicSize = 9.5f;
-            cam.transform.position = new Vector3(0f, 4f, -10f);
+            cam.orthographicSize = 12.5f;
+            cam.transform.position = new Vector3(0f, 5f, -10f);
         }
 
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
-            player.transform.position = new Vector3(-4.5f, player.transform.position.y, player.transform.position.z);
+            player.transform.position = new Vector3(-13f, player.transform.position.y, player.transform.position.z);
     }
 
     // ---------------- El Guardián ----------------
@@ -204,7 +211,7 @@ public static partial class ArenaBuilder
                                         Slider slider, AudioClip deathSound, AudioClip growlSound)
     {
         var boss = new GameObject("ElGuardian") { layer = EnemyLayer };
-        boss.transform.position = new Vector3(4.5f, groundTop, 0f);
+        boss.transform.position = new Vector3(13f, groundTop, 0f);
         boss.transform.localScale = Vector3.one * OgreScale;
 
         var sr = boss.AddComponent<SpriteRenderer>();
