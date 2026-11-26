@@ -13,7 +13,7 @@ Hecho en Unity 6 · Distribución planificada en Steam · Precio planificado: **
 
 ---
 
-## La campaña en 30 segundos
+
 
 **Colossus** es un boss rush 2D de reflejos y lectura de patrones. Aquí no hay niveles de relleno ni hordas de enemigos menores: solo tú, tu espada y una arena cerrada frente a un coloso que quiere verte caer.
 
@@ -27,11 +27,10 @@ Cada jefe tiene ataques que **avisan antes de golpear**. Aprende su ritmo, esqui
 
 - 🔍 **Jefes que se leen, no que se adivinan.** El demonio marca el suelo en rojo antes de lanzarse o de soltar su lluvia de fuego; el Centinela destella antes de disparar y marca el suelo antes de golpear. Todo ataque se puede anticipar.
 - 🏆 **Tu rendimiento es tu poder.** Cada combate termina con una nota **S, A, B o C**. Una S te da el triple de puntos que una C.
-- 🧬 **Tu build, tu partida.** Gasta los puntos en cuatro atributos y en **cinco habilidades** (combo de tres golpes, onda de espada, dash doble, vampirismo y segundo aliento); el **parry** lo tienes desde el principio. La tienda ofrece **tres habilidades al azar** en cada visita: no hay dos partidas iguales.
-- 🛡️ **Defensa con riesgo y recompensa.** Cúbrete y recibe solo una parte del daño, o arriésgate a un **parry perfecto** (ventana de solo 0.07 s): anula el golpe y aturde al jefe; si era un proyectil, se lo devuelve; contra un ataque a distancia (proyectiles, ondas y aliento de fuego) no hay aturdimiento.
+- 🧬 **Tu build, tu partida.** Gasta los puntos en cuatro atributos y en **cinco habilidades** (combo de tres golpes, onda de espada, dash doble, vampirismo y segundo aliento); . La tienda ofrece **tres habilidades al azar** en cada visita: no hay dos partidas iguales.
+- 🛡️ **Defensa con riesgo y recompensa.** Cúbrete y recibe solo una parte del daño, o arriésgate a un **parry perfecto**  anula el golpe y aturde al jefe; si era un proyectil, se lo devuelve; 
 - 💥 **Cada golpe se siente.** Congelamiento al impactar, sacudida de cámara, números de daño y retroceso del jefe.
-- 🔥 **Arenas con carácter.** Columnas de fuego en la primera arena y géiseres que escupen llamas hacia el cielo en la segunda (el jefe es inmune; tú no).
-
+- 🔥 **Arenas con carácter.** Columnas de fuego en la primera arena y géiseres que escupen llamas hacia el cielo en la segunda 
 ---
 
 ## Así se ve
@@ -153,8 +152,8 @@ Empiezas la partida con 2 puntos (solo alcanzan para atributos). Después de cad
 - ✅ Menú principal, puerta entre arenas y reinicio de partida.
 
 **En camino**
-- 🔧 **Más jefes**: la meta es ir bastante más allá de los tres iniciales, y que la arena del Guardián se reduzca de verdad.
-- 🔧 Estamina y ventanas de invulnerabilidad más finas en el dash, tal como pide el diseño.
+- 🔧 **Más jefes**: la meta es ir bastante más allá de los tres iniciales
+- 🔧 Estamina y ventanas de invulnerabilidad más finas en el dash.
 - 🔧 Puntuación global de la partida y récords guardados en el disco.
 - 🔧 Soporte para mando y publicación en Steam.
 
