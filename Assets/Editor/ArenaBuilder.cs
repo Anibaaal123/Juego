@@ -10,10 +10,11 @@ using UnityEngine.UI;
 /// Construye el Boss Rush en el editor:
 ///   • Arena 1 (Assets/Scenes/Arena1_Demonio.unity): el jefe demonio original + resumen/tienda de mejoras + puerta.
 ///   • Arena 2 (Assets/Scenes/Arena2_Centinela.unity): se genera desde la Arena 1 con El Centinela y los géiseres de fuego.
+///   • Arena 3 (Assets/Scenes/Arena3_Guardian.unity): arena estrecha con El Guardián (ver ArenaBuilder.Arena3.cs).
 /// Menú: Colossus → Construir Boss Rush. Se puede volver a ejecutar: la Arena 2 se regenera completa
 /// (los cambios hechos a mano dentro de ella se pierden); en la Arena 1 solo se rehacen los objetos del Boss Rush.
 /// </summary>
-public static class ArenaBuilder
+public static partial class ArenaBuilder
 {
     private const string BeastDir = "Assets/Characters/Boss/HellBeast";
     private const string AnimDir = BeastDir + "/Animations";
@@ -38,7 +39,7 @@ public static class ArenaBuilder
     private const string DoorName = "ExitDoor";
     private const string MessageName = "ArenaMessage";
 
-    [MenuItem("Colossus/Construir Boss Rush (Arena 1 + Arena 2)")]
+    [MenuItem("Colossus/Construir Boss Rush (3 arenas)")]
     public static void BuildBossRush()
     {
         if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
@@ -60,10 +61,13 @@ public static class ArenaBuilder
         ConfigureSingleSprite(GroundTopSpritePath, Vector4.zero, SpriteAlignment.TopCenter);
         ConfigureSingleSprite(GroundFillSpritePath, Vector4.zero, SpriteAlignment.TopCenter);
 
+        ConfigureArena3Sprites();
+
         BuildFireballPrefab(LoadSprites(BeastDir + "/Fireball"));
 
         BuildArena1();
         BuildArena2();
+        BuildArena3();
 
         // El menú se crea solo si no existe (se regenera con Colossus → Construir Menú Principal)
         if (AssetDatabase.LoadAssetAtPath<SceneAsset>(MenuBuilder.MainMenuScenePath) == null) MenuBuilder.BuildMainMenu();
@@ -71,10 +75,10 @@ public static class ArenaBuilder
         UpdateBuildSettings();
         AssetDatabase.SaveAssets();
         EditorSceneManager.OpenScene(MenuBuilder.MainMenuScenePath);
-        Debug.Log("[ArenaBuilder] Boss Rush construido: MainMenu -> Arena1_Demonio -> Arena2_Centinela");
+        Debug.Log("[ArenaBuilder] Boss Rush construido: MainMenu -> Arena1_Demonio -> Arena2_Centinela -> Arena3_Guardian");
     }
 
-    /// <summary>Orden de las escenas en el juego: menú (0), Arena 1 (1), Arena 2 (2).</summary>
+    /// <summary>Orden de las escenas en el juego: menú (0), Arena 1 (1), Arena 2 (2), Arena 3 (3).</summary>
     public static void UpdateBuildSettings()
     {
         EditorBuildSettings.scenes = new[]
@@ -82,6 +86,7 @@ public static class ArenaBuilder
             new EditorBuildSettingsScene(MenuBuilder.MainMenuScenePath, true),
             new EditorBuildSettingsScene(Arena1ScenePath, true),
             new EditorBuildSettingsScene(Arena2ScenePath, true),
+            new EditorBuildSettingsScene(Arena3ScenePath, true),
         };
     }
 
@@ -215,8 +220,8 @@ public static class ArenaBuilder
         BuildFireFloor(groundTop, arenaMin, arenaMax, baseOrder - 1, baseOrder + 2, boss.GetComponent<EnemyHealth>(),
                        burn.Skip(4).ToArray());
 
-        // Por ahora es la última arena: muestra el resumen, pero sin tienda ni puerta (se activan cuando exista la Arena 3)
-        SetupBossRushObjects(scene, boss.GetComponent<EnemyHealth>(), nextScene: "", offerUpgrades: false, showStartShop: false,
+        // Al vencerlo se abre la tienda y luego la puerta hacia la Arena 3
+        SetupBossRushObjects(scene, boss.GetComponent<EnemyHealth>(), nextScene: "Arena3_Guardian", offerUpgrades: true, showStartShop: false,
                              bossName: "El Centinela", fastTime: 50f, slowTime: 140f);
 
         EditorSceneManager.MarkSceneDirty(scene);

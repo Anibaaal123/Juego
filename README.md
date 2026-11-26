@@ -80,8 +80,21 @@ Un coloso alado que domina el aire. Elige sus ataques al azar según la distanci
 ### 2. El Centinela — 220 HP · *jugable*
 Un guardián del fuego que no quiere que te acerques. Se mantiene a distancia y dispara bolas de fuego apuntadas y, cada tres ataques, un abanico de tres. Si lo presionas demasiado se transforma en un **pilar de fuego** y reaparece lejos. Mientras tanto, el suelo de su arena se abre en géiseres de fuego.
 
-### 3. El Guardián — 450 HP · *en desarrollo*
-El jefe final: una arena que se va reduciendo con bordes peligrosos que te arrinconan, y un ataque que toma un porcentaje de tu vida. Llegarás a él con todo lo que hayas construido… si llegas.
+### 3. El Guardián — 450 HP · *jugable*
+El jefe final: un ogro enorme en una **arena estrecha** cuyos bordes se encienden cada cierto tiempo y te arrinconan hacia el centro. No es rápido, pero cada golpe duele:
+- **Garrotazo:** levanta el garrote, marca el suelo y golpea hacia adelante.
+- **Salto aplastante:** salta sobre ti y, al caer, lanza **ondas por el suelo** hacia ambos lados. Hay que saltarlas.
+- **Golpe devastador:** carga durante 1.5 s con un rugido y te quita **el 50 % de tu vida máxima**. Cubrirte lo baja al 15 %; un parry bien hecho lo anula y lo aturde.
+- **Fase 2 al 50 % de vida:** suelta el garrote, ruge y se enfurece: más rápido, con menos descanso entre ataques, embestidas y dos pares de ondas por salto.
+
+Llegarás a él con todo lo que hayas construido… si llegas.
+
+<table>
+<tr>
+<td width="50%"><img src="Docs/guardian_garrotazo.png" alt="El Guardián levanta el garrote"><br><sub>El garrotazo <b>avisa</b>: el garrote en alto y la zona marcada en rojo.</sub></td>
+<td width="50%"><img src="Docs/guardian_fase2.png" alt="El Guardián en fase 2"><br><sub>En <b>fase 2</b> pierde el garrote y se enrojece de furia.</sub></td>
+</tr>
+</table>
 
 ---
 
@@ -131,14 +144,13 @@ Empiezas la partida con 2 puntos (solo alcanzan para atributos). Después de cad
 ## Estado del proyecto
 
 **Ya funciona**
-- ✅ Dos jefes completos, cada uno con su arena, sus ataques y su comportamiento.
+- ✅ Tres jefes completos, cada uno con su arena, sus ataques y su comportamiento.
 - ✅ Resumen de rendimiento, notas S/A/B/C, tienda de puntos y seis habilidades.
 - ✅ Defensa con cubrirse y parry, salto con peso, dash con cargas.
 - ✅ Menú principal, puerta entre arenas y reinicio de partida.
 
 **En camino**
-- 🔧 **El Guardián**, el jefe final, y su arena que se reduce.
-- 🔧 **Más jefes**: la meta es ir bastante más allá de los tres iniciales.
+- 🔧 **Más jefes**: la meta es ir bastante más allá de los tres iniciales, y que la arena del Guardián se reduzca de verdad.
 - 🔧 Estamina y ventanas de invulnerabilidad más finas en el dash, tal como pide el diseño.
 - 🔧 Puntuación global de la partida y récords guardados en el disco.
 - 🔧 Soporte para mando y publicación en Steam.
@@ -159,10 +171,9 @@ Empiezas la partida con 2 puntos (solo alcanzan para atributos). Después de cad
 | **US$ 25** · Domador de colosos | Copia digital + propones el nombre y el epitafio de un jefe futuro |
 
 **Metas adicionales (stretch goals)**
-1. **El Guardián** y su arena que se reduce.
-2. Un **modo contrarreloj** para competir por la mejor nota.
-3. Jefes nuevos con arte propio, para llegar a seis.
-4. Banda sonora original.
+1. Un **modo contrarreloj** para competir por la mejor nota.
+2. Jefes nuevos con arte propio, para llegar a seis.
+3. Banda sonora original.
 5. Soporte para mando y traducción al inglés.
 
 **¿En qué se usaría el dinero?** Arte y música originales para los jefes nuevos, la publicación en Steam y pruebas con jugadores para ajustar la dificultad.
@@ -219,7 +230,7 @@ Empiezas la partida con 2 puntos (solo alcanzan para atributos). Después de cad
 
 ### Estructura Boss Rush
 - **Menú principal:** Jugar, Controles y Salir; se puede usar con mouse o teclado.
-- **2 arenas consecutivas:** Arena 1 (El Demonio, 250 HP) → Arena 2 (El Centinela, 220 HP).
+- **3 arenas consecutivas:** Arena 1 (El Demonio, 250 HP) → Arena 2 (El Centinela, 220 HP) → Arena 3 (El Guardián, 450 HP).
 - **Una sola vida:** al morir (o con R) la partida se reinicia desde la Arena 1 y se pierde la build. Esc abandona la partida y vuelve al menú.
 - **Progresión entre arenas:** la vida, los atributos y las habilidades se conservan al pasar de arena.
 - **Victoria:** al derrotar al último jefe se muestra el resumen, el mensaje de victoria y se vuelve al menú principal.
@@ -293,9 +304,10 @@ Elige sus ataques al azar según la distancia, sin repetir el mismo dos veces se
 Ambos jefes pueden quedar aturdidos por un parry exitoso, salvo mientras rugen o son un pilar de fuego.
 
 ### Ambientes
-- **Terreno (ambas arenas):** plataformas como islas de roca con pasto y calaveras, y un suelo de pasto sobre adoquines morados. Los colliders no cambian: es solo aspecto.
+- **Terreno (arenas 1 y 2):** plataformas como islas de roca con pasto y calaveras, y un suelo de pasto sobre adoquines morados. Los colliders no cambian: es solo aspecto.
 - **Arena 1:** columnas laterales de fuego que dañan de forma periódica.
 - **Arena 2 — Géiseres de fuego:** 4 grietas en el suelo; en cada ciclo 2 al azar parpadean 1.0 s (brotan llamas bajas que avisan) y luego lanzan una columna de fuego hacia arriba durante 2.0 s (unos 8 u de alto), que daña **15 HP cada 0.5 s** a quien esté dentro. El jefe es inmune a este fuego. (En el GDD era un piso eléctrico que además ralentizaba; se cambió a fuego para que encaje con el jefe.)
+- **Arena 3 — Arena estrecha:** 14 u de ancho entre dos columnas de piedra, con sombra a los costados. Cada 20 s se encienden los dos bordes: 1.0 s de aviso y 8 s de fuego (15 HP por segundo) que te empuja al centro, donde está el jefe. (En el GDD los bordes eran eléctricos; igual que en la Arena 2 se usó fuego.)
 
 ### Interfaz, sonido y game feel
 - Barras de vida del jugador y del jefe, mensajes en pantalla, resumen de combate, tienda de mejoras e indicador de habilidades.
@@ -306,7 +318,7 @@ Ambos jefes pueden quedar aturdidos por un parry exitoso, salvo mientras rugen o
 
 ## 2. Requerimientos fuera de alcance (por ahora)
 
-- **Jefe 3 (El Guardián) y Arena 3:** pendientes. Cuando existan, la Arena 2 también mostrará tienda y puerta (el constructor ya soporta más arenas).
+- **Arena 3 que se reduce:** hoy es estrecha de entrada y sus bordes se encienden por turnos; el GDD pedía que el espacio se fuera reduciendo con el tiempo.
 - **Estamina, endlag y ventanas exactas de i-frames del GDD:** el jugador aún usa valores del prototipo (10 de daño, 3 s de espera del dash).
 - **Puntaje global del GDD** (+1000 por jefe, rangos S/A/B/C sobre el total de la partida): hoy la nota se calcula por jefe y sirve para repartir puntos de mejora. `ScoreManager` sigue en la escena sin usarse.
 - **Pausa manual, pantalla final con estadísticas de toda la partida y guardado de récords (`SaveData.json`).**
@@ -326,6 +338,8 @@ Ambos jefes pueden quedar aturdidos por un parry exitoso, salvo mientras rugen o
 - **`EnemyHealth.cs`**: vida de cualquier jefe, barra, parpadeo al recibir daño, números de daño, retroceso y desvanecimiento al morir.
 - **`Scripts/Bosses/DemonBoss.cs`**: IA del Jefe 1 (aliento, picada, lluvia de fuego, fase 2 con rugido, elección aleatoria de ataques y aturdimiento).
 - **`Scripts/Bosses/CentinelaBoss.cs`**: IA del Jefe 2 (movimiento a distancia, bola de fuego, abanico y pilar de fuego con teletransporte).
+- **`Scripts/Bosses/OgreBoss.cs`**: IA del Jefe 3 (garrotazo, salto aplastante, golpe devastador del 50 % de vida, embestida y fase 2 sin garrote).
+- **`Scripts/Bosses/GroundWave.cs`**: onda que recorre el suelo tras el salto del Guardián; se esquiva saltando.
 - **`Scripts/Bosses/BossProjectile.cs`**: proyectil enemigo en línea recta; con un parry exitoso rebota hacia el jefe.
 - **`Scripts/Bosses/IStunnable.cs`**: interfaz de los jefes que pueden quedar aturdidos.
 
@@ -354,7 +368,8 @@ Ambos jefes pueden quedar aturdidos por un parry exitoso, salvo mientras rugen o
 - **`Scripts/Common/GameFeel.cs`**: hitstop, sacudida de cámara, números de daño y textos flotantes.
 - **`Scripts/Common/ProceduralFx.cs`**: corte visual y rugido sintetizado, generados por código.
 - **`Scripts/Common/SimpleSpriteAnimation.cs`**, **`FadeAndDestroy.cs`**, **`WarningPulse.cs`**: animación por cuadros, desvanecido de efectos y parpadeo de advertencias.
-- **`Editor/ArenaBuilder.cs`**: menú *Colossus → Construir Boss Rush* que configura la Arena 1, aplica el arte del terreno (plataformas y suelo), genera la Arena 2 (conservando su GUID) y ordena las escenas en Build Settings.
+- **`Editor/ArenaBuilder.cs`**: menú *Colossus → Construir Boss Rush* que configura la Arena 1, aplica el arte del terreno (plataformas y suelo), genera las arenas 2 y 3 (conservando sus GUID) y ordena las escenas en Build Settings.
+- **`Editor/ArenaBuilder.Arena3.cs`**: construye la Arena 3 (arena estrecha, columnas, sombra, El Guardián y bordes de fuego).
 - **`Editor/MenuBuilder.cs`**: menú *Colossus → Construir Menú Principal* que genera la escena del menú.
 
 ### Heredados del prototipo (sin uso en las escenas actuales)

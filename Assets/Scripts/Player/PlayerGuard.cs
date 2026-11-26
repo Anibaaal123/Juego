@@ -84,7 +84,7 @@ public class PlayerGuard : MonoBehaviour
     /// <summary>PlayerHealth lo llama si el golpe llegó estando cubierto. Devuelve el daño que sí se recibe.</summary>
     public int Block(int damage)
     {
-        int reduced = Mathf.Max(1, Mathf.CeilToInt(damage * guardDamageMultiplier));
+        int reduced = Mathf.Max(1, Mathf.CeilToInt(damage * guardDamageMultiplier - 0.001f));
 
         GameFeel.HitStop(0.04f);
         GameFeel.Shake(0.12f, 0.1f);

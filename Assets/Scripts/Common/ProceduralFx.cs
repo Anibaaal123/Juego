@@ -11,6 +11,7 @@ public static class ProceduralFx
 {
     private static Sprite slashSprite;
     private static AudioClip roarClip;
+    private static AudioClip impactClip;
 
     // ---------------- Corte ----------------
 
@@ -59,6 +60,36 @@ public static class ProceduralFx
     }
 
     // ---------------- Rugido ----------------
+
+    /// <summary>Golpe grave contra el suelo de ~0.45 s: un seno que baja de 95 a 38 Hz más un golpe de ruido al inicio.</summary>
+    public static AudioClip GetImpactClip()
+    {
+        if (impactClip != null) return impactClip;
+
+        const int rate = 44100;
+        const float length = 0.45f;
+        int samples = Mathf.RoundToInt(rate * length);
+        var data = new float[samples];
+        var rng = new System.Random(3);
+        float phase = 0f, noise = 0f;
+
+        for (int i = 0; i < samples; i++)
+        {
+            float t = i / (float)rate;
+            float freq = Mathf.Lerp(95f, 38f, Mathf.Clamp01(t / length));
+            phase += freq / rate;
+            noise = Mathf.Lerp(noise, (float)(rng.NextDouble() * 2.0 - 1.0), 0.25f);
+
+            float body = Mathf.Sin(phase * 2f * Mathf.PI) * 0.9f;
+            float crack = noise * 0.6f * Mathf.Exp(-t * 22f);
+            float envelope = Mathf.Exp(-t * 7f) * Mathf.Clamp01(t / 0.004f);
+            data[i] = Mathf.Clamp((body + crack) * envelope, -1f, 1f);
+        }
+
+        impactClip = AudioClip.Create("ImpactoSintetico", samples, 1, rate, false);
+        impactClip.SetData(data, 0);
+        return impactClip;
+    }
 
     /// <summary>Rugido grave de ~1.2 s: diente de sierra que baja de 110 a 55 Hz + ruido, con vibrato.</summary>
     public static AudioClip GetRoarClip()

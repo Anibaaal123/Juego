@@ -14,5 +14,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Arena2_Centinela.unity
     guid: d2369d419a6a28c4baab2e6c784eeaa4
+  - enabled: 1
+    path: Assets/Scenes/Arena3_Guardian.unity
+    guid: 80a685a62b5b41e4a9006ee26d341288
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
